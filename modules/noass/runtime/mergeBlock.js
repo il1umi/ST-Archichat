@@ -1,6 +1,15 @@
 import { defaultTemplate } from '../state/defaults.js';
 import { ensureTemplateDefaults, cloneTemplate } from '../state/state.js';
 import { replaceTagsWithStoredData } from './capture/capture.js';
+import {
+  getLastCompletionSnapshot,
+  notifyStoredDataView,
+  updateLastCompletionSnapshot,
+} from './completionSession.js';
+export {
+  getLastCompletionSnapshot,
+  setRefreshStoredDataView,
+} from './completionSession.js';
 import { processAndAddMergeBlock } from './mergeBlockProcessor.js';
 export { processAndAddMergeBlock } from './mergeBlockProcessor.js';
 import { processMessageList } from './messageListProcessor.js';
@@ -16,38 +25,6 @@ import {
 import {
   messagesHaveToolCalls,
 } from './messageBoundary.js';
-
-let refreshStoredDataView = null;
-let lastCompletionSnapshot = null;
-
-/**
- * 注入 UI 层提供的存储数据刷新回调。
- *
- * @param {(() => void) | null | undefined} callback 当捕获内容变化时触发的刷新函数
- */
-export function setRefreshStoredDataView(callback) {
-  refreshStoredDataView = typeof callback === 'function' ? callback : null;
-}
-
-/**
- * 获取最近一次 completion 触发时的快照，用于 Dry-Run 或调试。
- *
- * @returns {{ templateName: string, template: object, messages: Array, timestamp: number } | null}
- */
-export function getLastCompletionSnapshot() {
-  return lastCompletionSnapshot;
-}
-
-function updateLastCompletionSnapshot(state, template, messages, completion, skippedReason = null) {
-  lastCompletionSnapshot = {
-    templateName: state.active,
-    template: cloneTemplate(template),
-    messages: cloneMessageArray(messages),
-    timestamp: Date.now(),
-    source: completion?.chat_completion_source ?? null,
-    skippedReason,
-  };
-}
 
 /**
  * completion 事件处理入口：拆分消息块、触发合并流程并回写最终消息。
@@ -117,7 +94,7 @@ export function handleCompletion(ctx, state, completion) {
     } else if (typeof window.saveSettings === 'function') {
       window.saveSettings();
     }
-    refreshStoredDataView?.();
+    notifyStoredDataView();
   }
 }
 
@@ -137,7 +114,8 @@ export async function runWorldbookDryRun(ctx) {
   logAdapter.reset();
   logAdapter.append('Dry Run 开始', { timestamp: new Date().toISOString() }, { force: true });
 
-  if (!lastCompletionSnapshot || !Array.isArray(lastCompletionSnapshot.messages)) {
+  const snapshot = getLastCompletionSnapshot();
+  if (!snapshot || !Array.isArray(snapshot.messages)) {
     logAdapter.append('Dry Run 失败：暂无可用对话快照', null, { force: true });
     try {
       (ctx?.toastr || window.toastr || { warning: () => {} }).warning?.('暂无可用上下文，请先发送一轮消息。');
@@ -147,7 +125,6 @@ export async function runWorldbookDryRun(ctx) {
     return;
   }
 
-  const snapshot = lastCompletionSnapshot;
   logAdapter.append('上下文源', { source: snapshot?.source || null }, { force: true });
   const templateClone = ensureTemplateDefaults(cloneTemplate(snapshot.template || defaultTemplate));
   const config = buildRuntimeConfig(templateClone);
