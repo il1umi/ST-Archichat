@@ -2,6 +2,7 @@ import { defaultTemplate } from '../state/defaults.js';
 import { ensureTemplateDefaults, cloneTemplate } from '../state/state.js';
 import { process } from './clewd/processor.js';
 import { applyClewdTagTransferRules } from './clewd/tagTransfer.js';
+import { createClewdProcessOptions } from './clewdProcessOptions.js';
 import { captureAndStoreData, replaceTagsWithStoredData } from './capture/capture.js';
 import { buildRuntimeConfig } from './runtimeConfig.js';
 import { createCustomAnchorProtection } from './worldbookAnchorProtection.js';
@@ -135,29 +136,7 @@ export function processAndAddMergeBlock(template, config, blockToMerge, targetAr
 
   const anchorProtection = createCustomAnchorProtection(config, blockToMerge);
 
-  const logAdapter = getWorldbookLogAdapter();
-  const shouldLogRegex =
-    template?.debug_worldbook === true && logAdapter && typeof logAdapter.append === 'function';
-  const processOptions =
-    shouldLogRegex
-      ? {
-          logHandler: (event, payload = {}) => {
-            if (event !== 'hyperRegex:match') return;
-            try {
-              const order = Number.isFinite(payload.order) ? payload.order : null;
-              let preview = summarizeTextForDiagnostics(payload.match || '', 160);
-              if (!preview && typeof payload.match === 'string') {
-                preview = payload.match.slice(0, 160);
-              }
-              if (!preview) return;
-              const info = order !== null ? { order, preview } : { preview };
-              logAdapter.append('clewd 正则命中', info);
-            } catch {
-              // 忽略日志写入失败，避免影响主流程
-            }
-          },
-        }
-      : undefined;
+  const processOptions = createClewdProcessOptions(template);
 
   const mergedAssistantMessage = process(config, anchorProtection.blockForProcess, processOptions);
 
