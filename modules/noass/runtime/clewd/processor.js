@@ -6,6 +6,7 @@ import { cleanupClewdControlTags } from './controlTags.js';
 import { parseMergeDisableFlags } from './mergeDisable.js';
 import { buildAssistantOutput } from './outputBuilder.js';
 import { buildPrefixedPrompt } from './promptBuilder.js';
+import { rewriteSystemPrefixes } from './systemRewrite.js';
 
 /**
  * clewd 合并流程核心实现。
@@ -77,18 +78,7 @@ export function process(prefixs, messages, options = {}) {
 
       const mergeDisable = parseMergeDisableFlags(content);
 
-      const systemPattern1 = new RegExp(
-        `(\\n\\n|^\\s*)(?<!\\n\\n(${prefixs.user}|${prefixs.assistant}):.*?)${prefixs.system}:\\s*`,
-        'gs',
-      );
-      const systemPattern2 = new RegExp(`(\\n\\n|^\\s*)${prefixs.system}: *`, 'g');
-
-      content = content
-        .replace(systemPattern1, '$1')
-        .replace(
-          systemPattern2,
-          mergeDisable.all || mergeDisable.user || mergeDisable.system ? '$1' : `\n\n${prefixs.user}: `,
-        );
+      content = rewriteSystemPrefixes(content, prefixs, mergeDisable);
       content = hyperMerge(content, mergeDisable);
 
       const splitPattern = new RegExp(`\\n\\n(?=${prefixs.assistant}:|${prefixs.user}:)`, 'g');
