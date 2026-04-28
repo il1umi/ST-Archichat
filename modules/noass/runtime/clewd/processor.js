@@ -2,6 +2,7 @@
  * @file 基于 clewd 迁移实现的对话合并核心，负责解析 `<regex>` 指令与角色前缀。
  */
 import { defaultTemplate } from '../../state/defaults.js';
+import { relocateAtBlocks } from './atRelocation.js';
 import { cleanupClewdControlTags } from './controlTags.js';
 import { parseMergeDisableFlags } from './mergeDisable.js';
 import { buildAssistantOutput } from './outputBuilder.js';
@@ -64,20 +65,7 @@ export function process(prefixs, messages, options = {}) {
       content = rewriteSystemPrefixes(content, prefixs, mergeDisable);
       content = mergeAdjacentRolePrefixes(content, prefixs, mergeDisable);
 
-      const splitPattern = new RegExp(`\\n\\n(?=${prefixs.assistant}:|${prefixs.user}:)`, 'g');
-      let splitContent = content.split(splitPattern);
-
-      let match;
-      const atPattern = /<@(\d+)>(.*?)<\/@\1>/gs;
-      while ((match = atPattern.exec(content)) !== null) {
-        let index = splitContent.length - parseInt(match[1]) - 1;
-        if (index >= 0) {
-          splitContent[index] += `\n\n${match[2]}`;
-        }
-        content = content.replace(match[0], '');
-      }
-
-      content = splitContent.join('\n\n').replace(/<@(\d+)>.*?<\/@\1>/gs, '');
+      content = relocateAtBlocks(content, prefixs);
 
       const regex2 = hyperRegex(content, 2);
       content = regex2[0];
