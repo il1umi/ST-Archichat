@@ -2,6 +2,7 @@
  * @file 基于 clewd 迁移实现的对话合并核心，负责解析 `<regex>` 指令与角色前缀。
  */
 import { defaultTemplate } from '../../state/defaults.js';
+import { cleanupClewdControlTags } from './controlTags.js';
 import { buildAssistantOutput } from './outputBuilder.js';
 import { buildPrefixedPrompt } from './promptBuilder.js';
 
@@ -118,25 +119,7 @@ export function process(prefixs, messages, options = {}) {
       content = regex3[0];
       regexLogs += regex3[1];
 
-      content = content
-        .replace(/<regex( +order *= *\d)?>.*?<\/regex>/gm, '')
-        .replace(/\r\n|\r/gm, '\n')
-        .replace(/\s*<\|curtail\|>\s*/g, '\n')
-        .replace(/\s*<\|join\|>\s*/g, '')
-        .replace(/\s*<\|space\|>\s*/g, ' ')
-        .replace(/<\|(\\.*?)\|>/g, function (innerMatch, p1) {
-          try {
-            return JSON.parse(`"${p1}"`);
-          } catch {
-            return innerMatch;
-          }
-        });
-
-      return content
-        .replace(/\s*<\|.*?\|>\s*/g, '\n\n')
-        .trim()
-        .replace(/^.+:/, '\n\n$&')
-        .replace(/(?<=\n)\n(?=\n)/g, '');
+      return cleanupClewdControlTags(content);
     };
 
     let prompt = system || '';
