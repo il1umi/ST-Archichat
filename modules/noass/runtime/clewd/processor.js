@@ -7,6 +7,7 @@ import { cleanupClewdControlTags } from './controlTags.js';
 import { parseMergeDisableFlags } from './mergeDisable.js';
 import { buildAssistantOutput } from './outputBuilder.js';
 import { buildPrefixedPrompt } from './promptBuilder.js';
+import { applyRegexDirectives } from './regexDirectives.js';
 import { mergeAdjacentRolePrefixes } from './roleMerge.js';
 import { rewriteSystemPrefixes } from './systemRewrite.js';
 
@@ -32,27 +33,12 @@ export function process(prefixs, messages, options = {}) {
 
   const HyperProcess = function (system, messages, claudeMode) {
     const hyperRegex = function (content, order) {
-      let regexLog = '';
-      const regexPattern = `<regex(?: +order *= *${order})${order === 2 ? '?' : ''}> *"(/?)(.*)\\1(.*?)" *: *"(.*?)" *</regex>`;
-      let matches = content.match(new RegExp(regexPattern, 'gm'));
-
-      if (matches) {
-        for (const match of matches) {
-          try {
-            const reg = /<regex(?: +order *= *\d)?> *"(\/?)(.*)\1(.*?)" *: *"(.*?)" *<\/regex>/.exec(match);
-            regexLog += `${match}\n`;
-            const replacePattern = new RegExp(reg[2], reg[3]);
-            const replacement = JSON.parse(`"${reg[4].replace(/\\?"/g, '\\"')}"`);
-            content = content.replace(replacePattern, replacement);
-            if (typeof logHandler === 'function') {
-              logHandler('hyperRegex:match', { order, match });
-            }
-          } catch (e) {
-            console.warn('[ST-Archichat][noass] Regex processing error:', e);
-          }
-        }
-      }
-      return [content, regexLog];
+      return applyRegexDirectives(content, order, {
+        logHandler,
+        onError: (error) => {
+          console.warn('[ST-Archichat][noass] Regex processing error:', error);
+        },
+      });
     };
 
     const HyperPmtProcess = function (content) {
