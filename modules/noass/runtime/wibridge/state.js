@@ -301,21 +301,22 @@ export function summarizeTextForDiagnostics(text, length = 80) {
 
 export function cloneDryRunMessage(message) {
   if (!message || typeof message !== 'object') return { role: '', content: '' };
-  const cloned = {
-    role: message.role,
-    content: typeof message.content === 'string' ? message.content : '',
-  };
-  if (typeof message.name === 'string') {
-    cloned.name = message.name;
+  try {
+    if (typeof structuredClone === 'function') {
+      return structuredClone(message);
+    }
+  } catch {
+    // Fall through to JSON/shallow clone.
   }
-  if (message.meta && typeof message.meta === 'object') {
-    try {
-      cloned.meta = JSON.parse(JSON.stringify(message.meta));
-    } catch {
+  try {
+    return JSON.parse(JSON.stringify(message));
+  } catch {
+    const cloned = { ...message };
+    if (message.meta && typeof message.meta === 'object') {
       cloned.meta = { ...message.meta };
     }
+    return cloned;
   }
-  return cloned;
 }
 
 export function cloneMessageArray(messages) {

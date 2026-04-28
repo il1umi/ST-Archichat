@@ -39,6 +39,17 @@ export function getLastCompletionSnapshot() {
   return lastCompletionSnapshot;
 }
 
+function updateLastCompletionSnapshot(state, template, messages, completion, skippedReason = null) {
+  lastCompletionSnapshot = {
+    templateName: state.active,
+    template: cloneTemplate(template),
+    messages: cloneMessageArray(messages),
+    timestamp: Date.now(),
+    source: completion?.chat_completion_source ?? null,
+    skippedReason,
+  };
+}
+
 function buildRuntimeConfig(template) {
   const config = JSON.parse(JSON.stringify(defaultTemplate));
   setWorldbookDebug(template.debug_worldbook === true);
@@ -140,6 +151,77 @@ function stripNoTrans(content) {
   return content;
 }
 
+function cloneMessage(message) {
+  if (!message || typeof message !== 'object') return {};
+  try {
+    if (typeof structuredClone === 'function') {
+      return structuredClone(message);
+    }
+  } catch {
+    // Fall through to JSON/shallow clone.
+  }
+  try {
+    return JSON.parse(JSON.stringify(message));
+  } catch {
+    return { ...message };
+  }
+}
+
+function cloneMessageWithContent(message, content) {
+  const cloned = cloneMessage(message);
+  cloned.content = content;
+  return cloned;
+}
+
+function stripNoTransFromMessage(message) {
+  return cloneMessageWithContent(message, stripNoTrans(message?.content));
+}
+
+function isTextPart(part) {
+  if (!part || typeof part !== 'object') return false;
+  if (typeof part.text !== 'string') return false;
+  const type = typeof part.type === 'string' ? part.type.toLowerCase() : '';
+  return !type || type === 'text' || type === 'input_text';
+}
+
+function getMergeableTextContent(content) {
+  if (typeof content === 'string') {
+    return content;
+  }
+  if (Array.isArray(content)) {
+    if (!content.length || !content.every(isTextPart)) return null;
+    return content.map((part) => part.text).join('\n\n');
+  }
+  if (isTextPart(content)) {
+    return content.text;
+  }
+  return null;
+}
+
+function createMergeMessage(message) {
+  const text = getMergeableTextContent(message?.content);
+  if (text == null) return null;
+  return cloneMessageWithContent(message, text);
+}
+
+function isMultimodalMessage(message) {
+  if (!message || typeof message !== 'object') return false;
+  if (message.content == null) return false;
+  return getMergeableTextContent(message.content) == null;
+}
+
+function messageHasToolCall(message) {
+  if (!message || typeof message !== 'object') return false;
+  if (String(message.role || '').toLowerCase() === 'tool') return true;
+  if (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) return true;
+  if (message.tool_calls && !Array.isArray(message.tool_calls)) return true;
+  return typeof message.tool_call_id === 'string' && message.tool_call_id.trim().length > 0;
+}
+
+function messagesHaveToolCalls(messages) {
+  return Array.isArray(messages) && messages.some(messageHasToolCall);
+}
+
 /**
  * 将来自宿主的非标准角色（如 'model'）规范化为合并兼容的角色
  * @param {string} role
@@ -162,9 +244,62 @@ function isEmptyContent(content) {
     return content.trim().length === 0;
   }
   if (Array.isArray(content)) {
-    return content.every((part) => !part || typeof part.text !== 'string' || part.text.trim().length === 0);
+    return content.every((part) => {
+      if (part == null) return true;
+      if (typeof part === 'string') return part.trim().length === 0;
+      if (isTextPart(part)) return part.text.trim().length === 0;
+      if (typeof part.text === 'string' && part.text.trim().length > 0) return false;
+      // Non-text parts such as images or videos are meaningful content.
+      return !(typeof part === 'object');
+    });
   }
   return !content;
+}
+
+function addPreservedMessage(config, template, message, targetArray) {
+  if (!message || typeof message !== 'object') return;
+  if (isEmptyContent(message.content)) return;
+  if (typeof message.content === 'string') {
+    processPreservedSystemMessage(config, template, message, targetArray);
+  } else {
+    targetArray.push(message);
+  }
+}
+
+function processMessageList(template, config, messages) {
+  const finalMessages = [];
+  let currentMergeBlock = [];
+  let storedChanged = false;
+
+  const flushMergeBlock = () => {
+    if (!currentMergeBlock.length) return;
+    storedChanged =
+      processAndAddMergeBlock(template, config, currentMergeBlock, finalMessages) ||
+      storedChanged;
+    currentMergeBlock = [];
+  };
+
+  for (const message of messages) {
+    if (contentHasNoTrans(message?.content)) {
+      flushMergeBlock();
+      addPreservedMessage(config, template, stripNoTransFromMessage(message), finalMessages);
+      continue;
+    }
+
+    if (isMultimodalMessage(message)) {
+      flushMergeBlock();
+      addPreservedMessage(config, template, cloneMessage(message), finalMessages);
+      continue;
+    }
+
+    const mergeMessage = createMergeMessage(message);
+    if (mergeMessage && !isEmptyContent(mergeMessage.content)) {
+      currentMergeBlock.push(mergeMessage);
+    }
+  }
+
+  flushMergeBlock();
+  return { finalMessages, storedChanged };
 }
 
 /**
@@ -401,11 +536,7 @@ export function processPreservedSystemMessage(config, template, message, targetA
 
   if (remainingContent) {
     const replaced = replaceTagsWithStoredData(remainingContent, template, config.clean_clewd);
-    const preservedMessage = {
-      role: message.role,
-      content: replaced,
-    };
-    if (message.name) preservedMessage.name = message.name;
+    const preservedMessage = cloneMessageWithContent(message, replaced);
     targetArray.push(preservedMessage);
   } else if (!systemMessage) {
     targetArray.push(message);
@@ -429,51 +560,25 @@ export function handleCompletion(ctx, state, completion) {
 
 
   const sanitizedTemplate = ensureTemplateDefaults(template);
-  const config = buildRuntimeConfig(sanitizedTemplate);
-
   const originalMessages = Array.isArray(completion.messages) ? completion.messages : [];
-  lastCompletionSnapshot = {
-    templateName: state.active,
-    template: cloneTemplate(sanitizedTemplate),
-    messages: cloneMessageArray(originalMessages),
-    timestamp: Date.now(),
-    source: completion?.chat_completion_source ?? null,
-  };
-
-  const finalMessages = [];
-  let currentMergeBlock = [];
-  let storedChanged = false;
-
-  for (const message of originalMessages) {
-    if (contentHasNoTrans(message?.content)) {
-      // 命中 notrans：先冲洗当前合并块，再将本条去标记后按原角色保留
-      storedChanged =
-        processAndAddMergeBlock(sanitizedTemplate, config, currentMergeBlock, finalMessages) ||
-        storedChanged;
-      currentMergeBlock = [];
-
-      const messageWithoutTag = {
-        role: message.role,
-        content: stripNoTrans(message.content),
-      };
-      if (message.name) messageWithoutTag.name = message.name;
-
-      if (!isEmptyContent(messageWithoutTag.content)) {
-        if (typeof messageWithoutTag.content === 'string') {
-          processPreservedSystemMessage(config, sanitizedTemplate, messageWithoutTag, finalMessages);
-        } else {
-          // 非字符串内容保留原样（仅移除 notrans），不做字符串替换与系统分割
-          finalMessages.push(messageWithoutTag);
-        }
-      }
-    } else {
-      currentMergeBlock.push(message);
+  if (messagesHaveToolCalls(originalMessages)) {
+    updateLastCompletionSnapshot(state, sanitizedTemplate, originalMessages, completion, 'tool_calls');
+    try {
+      console.debug('[ST-Archichat][noass] 检测到工具调用消息，本轮跳过 noass');
+    } catch {
+      // ignore
     }
+    return;
   }
 
-  storedChanged =
-    processAndAddMergeBlock(sanitizedTemplate, config, currentMergeBlock, finalMessages) ||
-    storedChanged;
+  const config = buildRuntimeConfig(sanitizedTemplate);
+  updateLastCompletionSnapshot(state, sanitizedTemplate, originalMessages, completion);
+
+  const { finalMessages, storedChanged } = processMessageList(
+    sanitizedTemplate,
+    config,
+    originalMessages,
+  );
 
   for (let i = 0; i < finalMessages.length; i++) {
     if (finalMessages[i]?.content) {
@@ -540,17 +645,7 @@ export async function runWorldbookDryRun(ctx) {
   const templateClone = ensureTemplateDefaults(cloneTemplate(snapshot.template || defaultTemplate));
   const config = buildRuntimeConfig(templateClone);
   const messagesClone = cloneMessageArray(snapshot.messages || []);
-  const finalMessages = [];
-  let currentMergeBlock = [];
   let storedChanged = false;
-
-  const flushMergeBlock = () => {
-    if (!currentMergeBlock.length) return;
-    storedChanged =
-      processAndAddMergeBlock(templateClone, config, currentMergeBlock, finalMessages) ||
-      storedChanged;
-    currentMergeBlock = [];
-  };
 
   const summarizeText = (text, length = 160) => {
     if (typeof text !== 'string') return '';
@@ -561,33 +656,13 @@ export async function runWorldbookDryRun(ctx) {
   let runError = null;
 
   try {
-    createDryRunContext();
-
-    for (const message of messagesClone) {
-      if (contentHasNoTrans(message?.content)) {
-        flushMergeBlock();
-
-        const messageWithoutTag = {
-          role: message.role,
-          content: stripNoTrans(message.content),
-        };
-        if (message.name) {
-          messageWithoutTag.name = message.name;
-        }
-
-        if (!isEmptyContent(messageWithoutTag.content)) {
-          if (typeof messageWithoutTag.content === 'string') {
-            processPreservedSystemMessage(config, templateClone, messageWithoutTag, finalMessages);
-          } else {
-            finalMessages.push(messageWithoutTag);
-          }
-        }
-      } else {
-        currentMergeBlock.push(message);
-      }
+    if (messagesHaveToolCalls(messagesClone)) {
+      logAdapter.append('Dry Run 跳过：检测到工具调用消息，本轮 noass 不会处理。', null, { force: true });
+      return;
     }
 
-    flushMergeBlock();
+    createDryRunContext();
+    ({ storedChanged } = processMessageList(templateClone, config, messagesClone));
     dryRunResult = finalizeDryRunContext();
   } catch (error) {
     runError = error;
