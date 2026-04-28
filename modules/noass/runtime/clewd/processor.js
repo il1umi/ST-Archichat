@@ -59,7 +59,7 @@ export function process(prefixs, messages, options = {}) {
               logHandler('hyperRegex:match', { order, match });
             }
           } catch (e) {
-            console.warn('[ST-Diff][noass] Regex processing error:', e);
+            console.warn('[ST-Archichat][noass] Regex processing error:', e);
           }
         }
       }
@@ -156,7 +156,7 @@ export function process(prefixs, messages, options = {}) {
         const prefix = `\n\n${prefixLookup}${name ? `: ${name}` : ''}: `;
         prompt += prefix + (typeof message.content === 'string' ? message.content.trim() : String(message.content).trim());
       } else {
-        console.warn('[ST-Diff][noass] 跳过无效消息对象:', message);
+        console.warn('[ST-Archichat][noass] 跳过无效消息对象:', message);
       }
     }
 
@@ -172,7 +172,7 @@ export function process(prefixs, messages, options = {}) {
     try {
       separator = JSON.parse(`"${prefixs.separator}"`);
     } catch (e) {
-      console.error('[ST-Diff][noass] separator 解析失败', e);
+      console.error('[ST-Archichat][noass] separator 解析失败', e);
     }
   }
 

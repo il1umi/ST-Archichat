@@ -379,7 +379,7 @@ class NoassWorldbookControls {
 
     if (!force && !this.dom.$debug.prop('checked')) {
       try {
-        console.debug('[ST-Diff][noass][worldbook]', message, data || '');
+        console.debug('[ST-Archichat][noass][worldbook]', message, data || '');
       } catch {}
       return;
     }

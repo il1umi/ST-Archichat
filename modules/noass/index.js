@@ -54,7 +54,7 @@ export async function mount(ctx) {
 
   const bound = bindUI(ctx, currentState, binderDeps);
   if (!bound) {
-    console.warn('[ST-Diff][noass] 未找到 UI 容器，挂载跳过');
+    console.warn('[ST-Archichat][noass] 未找到 UI 容器，挂载跳过');
     resetRuntimeHooks();
     return;
   }

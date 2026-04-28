@@ -1,7 +1,7 @@
 /**
  * @file 声明 noass 模块使用到的常量默认值（模板、世界书组、命名空间等）。
  */
-export const EXT_KEY = 'st-diff';
+export const EXT_KEY = 'st-archichat';
 export const DEFAULT_TEMPLATE_NAME = '配置1';
 export const NO_TRANS_TAG = '<|no-trans|>';
 

@@ -1,7 +1,8 @@
-// 酒馆构筑对比工具（ST-Diff）- 主入口
+// 对话规则构筑扩展（ST-Archichat）- 主入口
 
-const EXT_KEY = 'st-diff'; // 内部命名空间 key
-const DISPLAY_NAME = '酒馆构筑对比工具';
+const EXT_KEY = 'st-archichat'; // 内部命名空间 key
+const LEGACY_EXT_KEY = 'st-diff';
+const DISPLAY_NAME = '对话规则构筑扩展';
 
 function getCtx() {
   try {
@@ -23,19 +24,9 @@ const DEFAULTS = {
 
 async function openPanel(ctx) {
   // 使用酒馆的模板加载（提供 scripts/extensions 下相对路径）
-  const base = 'third-party/ST-Diff/presentation/templates';
+  const base = `${resolveThisExtensionRootName()}/presentation/templates`;
   const html = await ctx.renderExtensionTemplateAsync(base, 'main');
   const $root = $(html);
-
-
-  // 恢复设置示例：视图模式
-  const settings = ensureSettings(ctx);
-  $root.find('[data-stdiff-view-mode]').val(settings.ui.viewMode);
-
-  $root.on('change', '[data-stdiff-view-mode]', (e) => {
-    settings.ui.viewMode = e.target.value;
-    ctx.saveSettingsDebounced?.();
-  });
 
   bindUpdateButton(ctx, $root);
   probeUpdateIndicator(ctx, $root).catch(() => {});
@@ -46,55 +37,60 @@ async function openPanel(ctx) {
 }
 
 function ensureSettings(ctx) {
-  const root = ctx.extensionSettings || window.extension_settings;
+  const root = ctx.extensionSettings || (window.extension_settings ||= {});
+
+  // One-time migration: old ST-Diff → ST-Archichat (keep legacy key untouched for the new ST-Diff)
+  // - If `st-archichat` doesn't exist, copy whole tree
+  // - If it already exists (e.g. user opened once), only backfill missing top-level keys (non-destructive)
+  const legacy = root?.[LEGACY_EXT_KEY];
+  if (legacy && typeof legacy === 'object') {
+    if (!root[EXT_KEY]) {
+      try {
+        root[EXT_KEY] = JSON.parse(JSON.stringify(legacy));
+      } catch {
+        root[EXT_KEY] = {};
+      }
+    } else {
+      try {
+        for (const key of Object.keys(legacy)) {
+          if (typeof root[EXT_KEY][key] === 'undefined') {
+            root[EXT_KEY][key] = JSON.parse(JSON.stringify(legacy[key]));
+          }
+        }
+      } catch {}
+    }
+  }
   root[EXT_KEY] ||= JSON.parse(JSON.stringify(DEFAULTS));
   return root[EXT_KEY];
-}
-
-function loadEnabledToUI(ctx) {
-  const s = ensureSettings(ctx);
-  $('#stdiff-enabled').prop('checked', !!s.enabled);
-  updateModulesVisibility(ctx);
-}
-
-function bindEnableToggle(ctx) {
-  $(document).on('change', '#stdiff-enabled', function () {
-    const s = ensureSettings(ctx);
-    s.enabled = $(this).prop('checked');
-    (ctx.saveSettingsDebounced || window.saveSettingsDebounced || (()=>{}))();
-    try { toastr.info(`${DISPLAY_NAME}${s.enabled ? '已启用' : '已禁用'}`, DISPLAY_NAME); } catch {}
-    updateModulesVisibility(ctx);
-  });
 }
 
 async function init() {
   const ctx = getCtx();
   if (!ctx?.renderExtensionTemplateAsync) {
-    console.error('[ST-Diff] 宿主缺少 renderExtensionTemplateAsync');
+    console.error('[ST-Archichat] 宿主缺少 renderExtensionTemplateAsync');
     return;
   }
 
+  // Ensure settings namespace exists + run one-time migration (st-diff -> st-archichat)
+  ensureSettings(ctx);
+
   // 主面板
   await openPanel(ctx);
-  // 启用总开关（位于模板内）
-  bindEnableToggle(ctx);
-  loadEnabledToUI(ctx);
 
   // 首次尝试挂载无界面模块
   try {
     await Modules.noass.mount(ctx);
   } catch (e) {
-    console.warn('[ST-Diff] noass 初始化失败', e);
+    console.warn('[ST-Archichat] noass 初始化失败', e);
   }
 
   try {
     await Modules.macros.mount(ctx);
   } catch (e) {
-    console.warn('[ST-Diff] macros 初始化失败', e);
+    console.warn('[ST-Archichat] macros 初始化失败', e);
   }
 
-  // 页面感知式装载模块（世界书优先，预设占位）
-  setupPageAwareMount(ctx);
+  // 说明：世界书对比已拆分为独立扩展 ST-Diff，这里仅保留对话规则构筑相关模块。
 }
 
 // =============== 模块装载器（页面感知） ===============
@@ -108,7 +104,7 @@ const Modules = {
         const mod = await import('./modules/noass/index.js');
         await mod.mount(ctx);
       } catch (e) {
-        console.warn('[ST-Diff] noass 模块加载失败', e);
+        console.warn('[ST-Archichat] noass 模块加载失败', e);
         this.mounted = false;
       }
     },
@@ -121,7 +117,7 @@ const Modules = {
           await mod.unmount(ctx);
         }
       } catch (e) {
-        console.warn('[ST-Diff] noass 模块卸载失败', e);
+        console.warn('[ST-Archichat] noass 模块卸载失败', e);
       }
     },
   },
@@ -134,7 +130,7 @@ const Modules = {
         const mod = await import('./modules/macros/index.js');
         await mod.mount(ctx);
       } catch (e) {
-        console.warn('[ST-Diff] macros 模块加载失败', e);
+        console.warn('[ST-Archichat] macros 模块加载失败', e);
         this.mounted = false;
       }
     },
@@ -147,20 +143,9 @@ const Modules = {
           await mod.unmount(ctx);
         }
       } catch (e) {
-        console.warn('[ST-Diff] macros 模块卸载失败', e);
+        console.warn('[ST-Archichat] macros 模块卸载失败', e);
       }
     },
-  },
-  worldbook: {
-    mounted: false,
-    async mount(ctx) {
-      if (this.mounted) return; this.mounted = true;
-      try {
-        const mod = await import('./modules/worldbook/worldbook.module.js');
-        await mod.mount(ctx);
-      } catch (e) { console.warn('[ST-Diff] 世界书模块加载失败', e); }
-    },
-    unmount() { /* 预留：清理事件与DOM */ },
   },
   presets: {
     mounted: false,
@@ -169,60 +154,11 @@ const Modules = {
       try {
         const mod = await import('./modules/presets/presets.module.js');
         await mod.mount(ctx);
-      } catch (e) { console.warn('[ST-Diff] 预设模块加载失败', e); }
+      } catch (e) { console.warn('[ST-Archichat] 预设模块加载失败', e); }
     },
     unmount() { /* 预留 */ },
   }
 };
-
-function setupPageAwareMount(ctx){
-  const tryMountWorldbook = () => {
-    const hasWI = $('#world_editor_select').length > 0 || $('#world_info').length > 0;
-    if (hasWI) Modules.worldbook.mount(ctx);
-  };
-  tryMountWorldbook();
-  const es = ctx.eventSource, et = ctx.eventTypes || ctx.event_types;
-  if (es && et?.WORLDINFO_CHANGED) {
-    es.on(et.WORLDINFO_CHANGED, tryMountWorldbook);
-  } else {
-    let attempts = 0; const t = setInterval(()=>{ if (++attempts>20){clearInterval(t);} else { tryMountWorldbook(); } }, 500);
-  }
-}
-
-function updateModulesVisibility(ctx){
-  const settings = ensureSettings(ctx);
-  const worldbookEnabled = !!settings.enabled;
-
-  // 世界书模块显示/隐藏
-  $('#stdiff-worldbook-panel').toggle(worldbookEnabled);
-
-  try {
-    if (worldbookEnabled) {
-      Modules.worldbook.mount(ctx);
-    } else {
-      Modules.worldbook.unmount(ctx);
-    }
-  } catch (e) {
-    console.warn('[ST-Diff] worldbook 可见性更新失败', e);
-  }
-
-  // noass 模块始终展示外层容器，由内部开关控制主体
-  const $noass = $('#stdiff-noass');
-  if ($noass.length) { $noass.show(); }
-  try {
-    Modules.noass.mount(ctx);
-  } catch (e) {
-    console.warn('[ST-Diff] noass 可见性更新失败', e);
-  }
-
-  try {
-    Modules.macros.mount(ctx);
-  } catch (e) {
-    console.warn('[ST-Diff] macros 可见性更新失败', e);
-  }
-}
-
-
 
 function resolveRequestHeaders(ctx) {
   const fallback = { 'Content-Type': 'application/json' };
@@ -264,7 +200,7 @@ function shortHash(hash) {
   return typeof hash === 'string' && hash.length >= 7 ? hash.slice(0, 7) : '';
 }
 
-function resolveThisExtensionFolderName(fallback = 'ST-Diff') {
+function resolveThisExtensionFolderName(fallback = 'ST-Archichat') {
   try {
     const url = new URL(import.meta.url);
     const marker = '/scripts/extensions/';
@@ -279,6 +215,24 @@ function resolveThisExtensionFolderName(fallback = 'ST-Diff') {
     return fallback;
   } catch {
     return fallback;
+  }
+}
+
+function resolveThisExtensionRootName(fallback = 'ST-Archichat') {
+  try {
+    const url = new URL(import.meta.url);
+    const marker = '/scripts/extensions/';
+    const pathname = String(url.pathname || '');
+    const index = pathname.lastIndexOf(marker);
+    if (index < 0) return `third-party/${fallback}`;
+
+    const relative = pathname.slice(index + marker.length).replace(/^\/+/, '');
+    const parts = relative.split('/').filter(Boolean);
+    if (parts[0] === 'third-party' && parts[1]) return `third-party/${parts[1]}`;
+    if (parts[0]) return parts[0];
+    return `third-party/${fallback}`;
+  } catch {
+    return `third-party/${fallback}`;
   }
 }
 
@@ -340,7 +294,7 @@ function buildUpdatePopupContent(payload) {
   const downloadDisabled = isUpToDate || !localCommit;
 
   wrapper.innerHTML = `
-    <div class="stdiff-update-popup__meta"><b>ST-Diff 更新</b></div>
+    <div class="stdiff-update-popup__meta"><b>${escapeHtml(DISPLAY_NAME)} 更新</b></div>
     <div class="stdiff-update-popup__meta">扩展目录：${escapeHtml(extensionName)}（${escapeHtml(scopeLabel)}）</div>
     <div class="stdiff-update-popup__meta">当前分支：${safeBranch}</div>
     <div class="stdiff-update-popup__meta">本地提交：${safeLocal}</div>
@@ -382,7 +336,7 @@ async function probeUpdateIndicator(ctx, $root) {
       $button.attr('title', '检测到云端更新，点击查看');
     }
   } catch (error) {
-    console.debug?.('[ST-Diff][update] 静默检查更新失败', error);
+    console.debug?.('[ST-Archichat][update] 静默检查更新失败', error);
   }
 }
 
@@ -406,7 +360,7 @@ async function openUpdatePopup(ctx, triggerButton) {
 
     if (!versionRes?.ok) {
       if (versionRes.status === 403) {
-        toastr?.error?.('权限不足：无法检查更新（全局扩展需要管理员权限）。', 'ST-Diff');
+        toastr?.error?.('权限不足：无法检查更新（全局扩展需要管理员权限）。', DISPLAY_NAME);
         return;
       }
       const text = await readResponsePayload(versionRes);
@@ -425,7 +379,7 @@ async function openUpdatePopup(ctx, triggerButton) {
       const content = document.createElement('div');
       content.className = 'stdiff-update-popup';
       content.innerHTML = `
-        <div class="stdiff-update-popup__meta"><b>ST-Diff 更新</b></div>
+        <div class="stdiff-update-popup__meta"><b>${escapeHtml(DISPLAY_NAME)} 更新</b></div>
         <div class="stdiff-update-popup__meta">该扩展似乎不是 Git 安装（或没有提交记录），无法自动检查与更新。</div>
         ${remoteUrl ? `<div class="stdiff-update-popup__meta">远端地址：${escapeHtml(remoteUrl)}</div>` : ''}
       `;
@@ -473,12 +427,12 @@ async function openUpdatePopup(ctx, triggerButton) {
         try {
           downloadButton.disabled = true;
           icon?.classList?.add('fa-spin');
-          toastr?.info?.('正在下载并覆盖更新，请稍候…', 'ST-Diff');
+          toastr?.info?.('正在下载并覆盖更新，请稍候…', DISPLAY_NAME);
 
           const updateRes = await postExtensionApi(ctx, '/api/extensions/update', { extensionName, global: isGlobal });
           if (!updateRes?.ok) {
             if (updateRes.status === 403) {
-              toastr?.error?.('权限不足：无法更新扩展（全局扩展需要管理员权限）。', 'ST-Diff');
+              toastr?.error?.('权限不足：无法更新扩展（全局扩展需要管理员权限）。', DISPLAY_NAME);
               downloadButton.disabled = false;
               return;
             }
@@ -489,12 +443,12 @@ async function openUpdatePopup(ctx, triggerButton) {
           }
 
           const data = await updateRes.json();
-          toastr?.success?.(`已更新至 ${data?.shortCommitHash ?? '最新提交'}，即将刷新页面`, 'ST-Diff');
+          toastr?.success?.(`已更新至 ${data?.shortCommitHash ?? '最新提交'}，即将刷新页面`, DISPLAY_NAME);
           try { ctx?.showLoader?.(); } catch {}
           location.reload();
         } catch (error) {
-          console.error('[ST-Diff][update] 更新失败', error);
-          toastr?.error?.('更新失败，请查看控制台日志。', 'ST-Diff');
+          console.error('[ST-Archichat][update] 更新失败', error);
+          toastr?.error?.('更新失败，请查看控制台日志。', DISPLAY_NAME);
           downloadButton.disabled = false;
         } finally {
           icon?.classList?.remove('fa-spin');
@@ -504,8 +458,8 @@ async function openUpdatePopup(ctx, triggerButton) {
 
     await callGenericPopup(wrapper, POPUP_TYPE.TEXT ?? 1, '', { wide: true, allowVerticalScrolling: true, leftAlign: true });
   } catch (error) {
-    console.error('[ST-Diff][update] 检查更新失败', error);
-    toastr?.error?.('检查更新失败，请查看控制台日志。', 'ST-Diff');
+    console.error('[ST-Archichat][update] 检查更新失败', error);
+    toastr?.error?.('检查更新失败，请查看控制台日志。', DISPLAY_NAME);
   } finally {
     $icon?.removeClass?.('fa-spin');
     $trigger?.prop?.('disabled', false);

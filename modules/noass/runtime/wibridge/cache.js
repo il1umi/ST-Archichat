@@ -32,7 +32,7 @@ export async function ensureRegexHelpers(ctx) {
           };
         }
       } catch (error) {
-        console.warn('[ST-Diff][noass] regex 引擎加载失败', error);
+        console.warn('[ST-Archichat][noass] regex 引擎加载失败', error);
       }
       return null;
     })();
@@ -63,7 +63,7 @@ export function computeWorldbookPromptContent(rawContent, depth) {
       isPrompt: true,
     });
   } catch (error) {
-    console.warn('[ST-Diff][noass] regex 展开失败', { depth, error });
+    console.warn('[ST-Archichat][noass] regex 展开失败', { depth, error });
     return rawContent;
   }
 }
@@ -297,7 +297,7 @@ export function notifyWorldbookSnapshotSubscribers() {
     try {
       callback(snapshot);
     } catch (error) {
-      console.warn('[ST-Diff][noass] 世界书快照通知失败', error);
+      console.warn('[ST-Archichat][noass] 世界书快照通知失败', error);
     }
   }
 }

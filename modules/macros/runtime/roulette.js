@@ -1,6 +1,6 @@
 import { buildWeightAcc, parseWeightedTokens, pickWeighted as pickWeightedBase, splitInlineList } from './utils.js';
 
-const TAG = '[ST-Diff][macros][roulette]';
+const TAG = '[ST-Archichat][macros][roulette]';
 const lastSelectionCache = new Map();
 
 /**
@@ -71,7 +71,7 @@ function createNotifier(ctx) {
       } catch (error) {
         try {
           // 兼容可能的notify(type, message, title)
-          hostNotify(type, message, 'ST-Diff 宏');
+          hostNotify(type, message, 'ST-Archichat 宏');
         } catch (innerError) {
           console.warn(`${TAG} 通知失败`, innerError);
         }
@@ -85,7 +85,7 @@ function createNotifier(ctx) {
       const type = normalizeType(level);
       try {
         if (typeof toastr[type] === 'function') {
-          toastr[type](message, 'ST-Diff 宏');
+          toastr[type](message, 'ST-Archichat 宏');
           return;
         }
       } catch (error) {

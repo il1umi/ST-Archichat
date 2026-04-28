@@ -30,7 +30,7 @@ import { generateId } from '../../runtime/utils.js';
 import { execute as executeFlow } from '../../runtime/flow.js';
 import { createEvaluator } from '../../runtime/evaluator.js';
 
-const TAG = '[ST-Diff][macros:UI:flow]';
+const TAG = '[ST-Archichat][macros:UI:flow]';
 
 /**
  * 渲染 Flow 宏面板。
@@ -493,7 +493,7 @@ export function renderFlowPanel(ctx, state, context) {
             const safeId = (state?.flow?.activeGroupId || 'flow').replace(/[\\/:*?"<>|]/g, '_');
             const a = document.createElement('a');
             a.href = url;
-            a.download = `ST-Diff-flow-${safeId}.json`;
+            a.download = `ST-Archichat-flow-${safeId}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

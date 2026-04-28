@@ -390,7 +390,7 @@ class MacroBinder {
     try {
       this.deps.saveState(this.ctx);
     } catch (error) {
-      console.warn('[ST-Diff][macros] 保存状态失败', error);
+      console.warn('[ST-Archichat][macros] 保存状态失败', error);
       try {
         notify(this.ctx, '保存设置失败，请查看控制台日志。', 'error');
       } catch {}
@@ -413,13 +413,13 @@ class MacroBinder {
     try {
       this.deps.unregisterMacros();
     } catch (error) {
-      console.warn('[ST-Diff][macros] 重新注销宏失败', error);
+      console.warn('[ST-Archichat][macros] 重新注销宏失败', error);
     }
 
     try {
       this.deps.registerMacros();
     } catch (error) {
-      console.warn('[ST-Diff][macros] 重新注册宏失败', error);
+      console.warn('[ST-Archichat][macros] 重新注册宏失败', error);
     }
 
     if (this.toolbarController && typeof this.toolbarController.updateActiveTab === 'function') {
@@ -468,7 +468,7 @@ class MacroBinder {
         }
       }
     } catch (error) {
-      console.warn('[ST-Diff][macros] 切换启用状态时注册/注销失败', error);
+      console.warn('[ST-Archichat][macros] 切换启用状态时注册/注销失败', error);
       // 回退 UI 与状态
       this.state.enabled = prev;
       this.$enabled.prop('checked', prev);

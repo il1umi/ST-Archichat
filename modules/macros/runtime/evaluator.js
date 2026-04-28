@@ -1,6 +1,6 @@
 import { MAX_MACRO_DEPTH } from '../constants.js';
 
-const TAG = '[ST-Diff][macros]';
+const TAG = '[ST-Archichat][macros]';
 
 /**
  * 解析酒馆提供的宏求值函数。
@@ -41,7 +41,7 @@ function resolveNotifier(ctx, custom) {
       } catch (error) {
         try {
           // 兼容可能的notify(type, message, title)
-          hostNotify(type, message, 'ST-Diff 宏');
+          hostNotify(type, message, 'ST-Archichat 宏');
         } catch (innerError) {
           console.warn(`${TAG} 通知调用失败`, innerError);
         }
@@ -56,7 +56,7 @@ function resolveNotifier(ctx, custom) {
 
       try {
         if (typeof toastr[type] === 'function') {
-          toastr[type](message, 'ST-Diff 宏');
+          toastr[type](message, 'ST-Archichat 宏');
           return;
         }
       } catch (error) {

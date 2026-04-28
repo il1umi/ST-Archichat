@@ -1,6 +1,6 @@
-# ST-Diff 宏模块：roulette / cascade 使用说明
+# ST-Archichat 宏模块：roulette / cascade 使用说明
 
-> 本文档面向终端用户，介绍如何在酒馆中使用 ST-Diff 扩展提供的两个宏：`{{roulette}}` 与 `{{cascade}}`。  
+> 本文档面向终端用户，介绍如何在酒馆中使用 ST-Archichat 扩展提供的两个宏：`{{roulette}}` 与 `{{cascade}}`。  
 > 运行时文档会以 Markdown 形式渲染成内置弹窗。
 
 <a id="stdiff-doc-roulette"></a>
@@ -63,7 +63,7 @@
 
 - 最大嵌套深度为 16 层，超出后会停止展开并返回原文片段；
 - 当候选条目全部被禁用或为空时，会直接返回原始宏字符串；
-- 运行时问题会在控制台输出 `[ST-Diff][roulette]` 日志，方便排查。
+- 运行时问题会在控制台输出 `[ST-Archichat][roulette]` 日志，方便排查。
 
 <a id="stdiff-doc-cascade"></a>
 
@@ -141,7 +141,7 @@
 
 #### 2.3.2 框架内连续编号重排（仅发送给模型）
 
-当你在同一个 `<framework>...</framework>` 块内放置多个相邻的 `{{cascade_*}}`（且它们使用相同前缀）时，为了让编号按最终文本顺序连续递增，ST-Diff 会在“发送给模型”之前做一次后处理重排：
+当你在同一个 `<framework>...</framework>` 块内放置多个相邻的 `{{cascade_*}}`（且它们使用相同前缀）时，为了让编号按最终文本顺序连续递增，ST-Archichat 会在“发送给模型”之前做一次后处理重排：
 
 - 只影响最终发送内容。没法在聊天窗口渲染；
 - 标签本身不会被删除；
@@ -166,8 +166,8 @@
 
 ## 3. 配置与备份建议
 
-- 所有宏配置保存在扩展设置下：`extensionSettings['st-diff'].macros`；
+- 所有宏配置保存在扩展设置下：`extensionSettings['st-archichat'].macros`；
 - 推荐在宏管理工具栏中使用“导出配置”定期备份 Roulette / Cascade 宏组；
 - 如果预览结果与预期不符，可以：
-  - 打开浏览器控制台，查看 `[ST-Diff][macros]` / `[ST-Diff][roulette]` / `[ST-Diff][cascade]` 日志；
+  - 打开浏览器控制台，查看 `[ST-Archichat][macros]` / `[ST-Archichat][roulette]` / `[ST-Archichat][cascade]` 日志；
   - 检查是否存在循环引用、权重为 0、范围填错等问题。

@@ -36,7 +36,7 @@ import {
   parseWeightedTokens,
 } from '../runtime/utils.js';
 
-const STATE_LOG_TAG = '[ST-Diff][macros:state]';
+const STATE_LOG_TAG = '[ST-Archichat][macros:state]';
 const ROULETTE_REF_REGEX = /\{\{\s*roulette_([a-zA-Z][\w-]{2,31})\s*\}\}/g;
 const CASCADE_REF_REGEX = /\{\{\s*cascade_([a-zA-Z][\w-]{2,31})\s*\}\}/g;
 const FLOW_REF_REGEX = /\{\{\s*flow_([a-zA-Z][\w-]{2,31})\s*\}\}/g;
@@ -101,7 +101,7 @@ export function saveMacrosState(ctx) {
       window.saveSettings();
     }
   } catch (error) {
-    console.warn('[ST-Diff][macros:state] 保存设置失败', error);
+    console.warn('[ST-Archichat][macros:state] 保存设置失败', error);
     try {
       const notifier = ctx?.ui?.notify ?? window?.stdiffNotify ?? window?.notify;
       if (typeof notifier === 'function') {
@@ -110,13 +110,13 @@ export function saveMacrosState(ctx) {
 
         try {
           if (prefersTriplet) {
-            notifier(type, '保存设置失败，请查看控制台日志。', 'ST-Diff');
+            notifier(type, '保存设置失败，请查看控制台日志。', 'ST-Archichat');
           } else {
             notifier('保存设置失败，请查看控制台日志。', type);
           }
         } catch {
           try { notifier('保存设置失败，请查看控制台日志。', type); } catch {}
-          try { notifier(type, '保存设置失败，请查看控制台日志。', 'ST-Diff'); } catch {}
+          try { notifier(type, '保存设置失败，请查看控制台日志。', 'ST-Archichat'); } catch {}
         }
       }
     } catch {}
@@ -743,7 +743,7 @@ function normalizeRouletteEntry(entry) {
 
   const weightValidation = validateWeight(entry?.weight, { min: 0 });
   if (!weightValidation.ok && weightValidation.message) {
-    console.warn('[ST-Diff][macros] 权重自动纠正：', weightValidation.message);
+    console.warn('[ST-Archichat][macros] 权重自动纠正：', weightValidation.message);
   }
 
   return {
@@ -765,7 +765,7 @@ function normalizeCascadeOption(option) {
 
   const weightValidation = validateWeight(option?.weight, { min: 0 });
   if (!weightValidation.ok && weightValidation.message) {
-    console.warn('[ST-Diff][macros] 权重自动纠正：', weightValidation.message);
+    console.warn('[ST-Archichat][macros] 权重自动纠正：', weightValidation.message);
   }
 
   return {
@@ -786,7 +786,7 @@ function normalizeFlowItem(item) {
 
   const weightValidation = validateWeight(item?.weight, { min: 0 });
   if (!weightValidation.ok && weightValidation.message) {
-    console.warn('[ST-Diff][macros] 权重自动纠正：', weightValidation.message);
+    console.warn('[ST-Archichat][macros] 权重自动纠正：', weightValidation.message);
   }
 
   return {

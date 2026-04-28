@@ -29,7 +29,7 @@ export function captureAndStoreData(template, content) {
     try {
       const regexMatch = rule.regex.match(/^\/(.+)\/([gimsu]*)$/);
       if (!regexMatch) {
-        console.warn('[ST-Diff][noass] 无效正则表达式：', rule.regex);
+        console.warn('[ST-Archichat][noass] 无效正则表达式：', rule.regex);
         continue;
       }
 
@@ -82,7 +82,7 @@ export function captureAndStoreData(template, content) {
         }
       }
     } catch (error) {
-      console.error('[ST-Diff][noass] 处理捕获规则出错：', rule.tag, error);
+      console.error('[ST-Archichat][noass] 处理捕获规则出错：', rule.tag, error);
     }
   }
 
@@ -238,7 +238,7 @@ export function filterByRange(array, rangeStr) {
 
     return result;
   } catch (error) {
-    console.warn('[ST-Diff][noass] 范围格式无效：', rangeStr, error);
+    console.warn('[ST-Archichat][noass] 范围格式无效：', rangeStr, error);
     return array;
   }
 }

@@ -2,7 +2,7 @@
  * @file 常量定义：宏模块使用的键值、配置上限与 UI 选择器。
  */
 
-export const EXTENSION_KEY = 'st-diff';
+export const EXTENSION_KEY = 'st-archichat';
 export const MODULE_NAMESPACE = 'macros';
 
 export const MACRO_KEYS = Object.freeze({

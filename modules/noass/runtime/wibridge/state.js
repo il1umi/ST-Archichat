@@ -64,7 +64,7 @@ export function setWorldbookDebug(enabled) {
 export function debugWorldbookLog(...args) {
   if (!worldbookState.debug) return;
   try {
-    console.debug('[ST-Diff][noass][worldbook]', ...args);
+    console.debug('[ST-Archichat][noass][worldbook]', ...args);
   } catch {
     // ignore
   }
@@ -72,7 +72,7 @@ export function debugWorldbookLog(...args) {
 
 export function warnWorldbookIssue(message, context = {}) {
   try {
-    console.warn('[ST-Diff][noass][worldbook warning]', message, context);
+    console.warn('[ST-Archichat][noass][worldbook warning]', message, context);
   } catch {
     // ignore
   }

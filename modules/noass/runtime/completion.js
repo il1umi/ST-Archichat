@@ -30,7 +30,7 @@ export function registerCompletion(ctx, state, options = {}) {
     try {
       handleCompletion(ctx, state, completion);
     } catch (error) {
-      console.warn('[ST-Diff][noass] 处理 completion 时发生异常', error);
+      console.warn('[ST-Archichat][noass] 处理 completion 时发生异常', error);
     }
   };
 

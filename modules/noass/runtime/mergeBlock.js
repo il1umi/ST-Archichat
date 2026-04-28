@@ -285,7 +285,7 @@ export function processAndAddMergeBlock(template, config, blockToMerge, targetAr
     );
     if (beforeContent !== mergedAssistantMessage.content) {
       try {
-        console.debug('[ST-Diff][noass] 合并内容发生标签替换');
+        console.debug('[ST-Archichat][noass] 合并内容发生标签替换');
       } catch {
         // ignore
       }
@@ -337,7 +337,7 @@ export function processAndAddMergeBlock(template, config, blockToMerge, targetAr
   // 仅在第一次合并块前注入 prefill；之后即便因 NO_TRANS_TAG 产生新块也不再重复注入
   if (config.inject_prefill !== false && prefill && prefill.trim() && !config.__prefillInjected) {
     try {
-      console.debug('[ST-Diff][noass] inject prefill before merged block', {
+      console.debug('[ST-Archichat][noass] inject prefill before merged block', {
         inject_prefill: config.inject_prefill !== false,
         has_prefill: !!prefill,
       });
@@ -355,7 +355,7 @@ export function processAndAddMergeBlock(template, config, blockToMerge, targetAr
     const preview = typeof summarizeTextForDiagnostics === 'function'
       ? summarizeTextForDiagnostics(mergedAssistantMessage.content || '', 80)
       : (mergedAssistantMessage?.content || '').slice(0, 80);
-    console.debug('[ST-Diff][noass] merged block role assigned', {
+    console.debug('[ST-Archichat][noass] merged block role assigned', {
       single_user: !!config.single_user,
       assignedRole,
       contentPreview: preview,
@@ -485,7 +485,7 @@ export function handleCompletion(ctx, state, completion) {
       );
       if (before !== finalMessages[i].content) {
         try {
-          console.debug('[ST-Diff][noass] 标签替换发生在消息', i);
+          console.debug('[ST-Archichat][noass] 标签替换发生在消息', i);
         } catch {
           // ignore
         }
@@ -518,7 +518,7 @@ export function handleCompletion(ctx, state, completion) {
 export async function runWorldbookDryRun(ctx) {
   const logAdapter = getWorldbookLogAdapter();
   if (!logAdapter || typeof logAdapter.reset !== 'function') {
-    console.warn('[ST-Diff][noass] Dry Run log adapter not ready');
+    console.warn('[ST-Archichat][noass] Dry Run log adapter not ready');
     return;
   }
 
@@ -594,7 +594,7 @@ export async function runWorldbookDryRun(ctx) {
     if (typeof finalizeDryRunContext === 'function') {
       dryRunResult = finalizeDryRunContext();
     }
-    console.error('[ST-Diff][noass] Dry Run 执行失败', error);
+    console.error('[ST-Archichat][noass] Dry Run 执行失败', error);
     try {
       logAdapter.append(
         'Dry Run 异常',
@@ -605,7 +605,7 @@ export async function runWorldbookDryRun(ctx) {
         { force: true },
       );
     } catch (logError) {
-      console.warn('[ST-Diff][noass] Dry Run 错误日志写入失败', logError);
+      console.warn('[ST-Archichat][noass] Dry Run 错误日志写入失败', logError);
     }
   }
 

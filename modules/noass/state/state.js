@@ -2,6 +2,7 @@
  * @file 负责管理 noass 模块的设置读写逻辑，包括模板初始化与世界书组规范化。
  */
 import {
+  EXT_KEY,
   DEFAULT_TEMPLATE_NAME,
   defaultTemplate,
   defaultRule,
@@ -23,7 +24,7 @@ import {
  */
 export function ensureState(ctx) {
   const root = ctx.extensionSettings || (window.extension_settings ||= {});
-  const moduleState = (root['st-diff'] ||= {});
+  const moduleState = (root[EXT_KEY] ||= {});
   const noass = (moduleState.noass ||= {});
 
   if (typeof noass.enabled === 'undefined') {

@@ -1,7 +1,7 @@
 import { FLOW_DEFAULTS } from '../constants.js';
 import { buildWeightAcc, clamp, pickWeighted, randomIntInRange } from './utils.js';
 
-const TAG = '[ST-Diff][macros][flow]';
+const TAG = '[ST-Archichat][macros][flow]';
 
 /**
  * @typedef {import('../state/manager.js').MacrosState} MacrosState
@@ -26,7 +26,7 @@ function createNotifier(ctx) {
       } catch (error) {
         try {
           // 兼容签名：notify(type, message, title)
-          hostNotify(type, message, 'ST-Diff 宏');
+          hostNotify(type, message, 'ST-Archichat 宏');
         } catch (innerError) {
           console.warn(`${TAG} 通知失败`, innerError);
         }
@@ -40,7 +40,7 @@ function createNotifier(ctx) {
       const type = normalizeType(level);
       try {
         if (typeof toastr[type] === 'function') {
-          toastr[type](message, 'ST-Diff 宏');
+          toastr[type](message, 'ST-Archichat 宏');
           return;
         }
       } catch (error) {

@@ -4,7 +4,7 @@ import { execute as executeCascade, evaluateSync as evaluateCascadeSync } from '
 import { execute as executeFlow, evaluateSync as evaluateFlowSync } from './flow.js';
 import { createEvaluator } from './evaluator.js';
 
-const TAG = '[ST-Diff][macros]';
+const TAG = '[ST-Archichat][macros]';
 /**
  * 跟踪此扩展注册的宏，避免取消注册酒馆原生宏。
  * 我们存储创建的具体宏键（例如"roulette_<id>"）以便后续安全注销。
@@ -31,7 +31,7 @@ function resolveHostAdapter(ctx) {
 }
 
 /**
- * 注册 ST-Diff 的“键式宏”：
+ * 注册 ST-Archichat 的“键式宏”：
  * 为每个 roulette 宏组注册键名：roulette_<groupId>，值为同步函数，返回加权选取后的文本。
  * 注意：宿主 evaluateMacros() 不支持带参数处理器，所以只能按键名逐组注册。
  * @param {any} ctx
@@ -126,7 +126,7 @@ export function registerMacros(ctx, stateBridge) {
 }
 
 /**
- * 注销 ST-Diff 扩展注册的宏实现（仅注销本扩展创建的键）。
+ * 注销 ST-Archichat 扩展注册的宏实现（仅注销本扩展创建的键）。
  * @param {any} ctx
  */
 export function unregisterMacros(ctx) {

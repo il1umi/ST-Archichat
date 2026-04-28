@@ -1,7 +1,7 @@
 <div id="st-diff" class="extension_block">
   <div class="inline-drawer" id="stdiff-drawer">
     <div class="inline-drawer-toggle inline-drawer-header">
-      <b>酒馆构筑对比工具</b>
+      <b>对话规则构筑扩展</b>
 
       <div class="stdiff-drawer-actions">
         <button
@@ -19,10 +19,6 @@
       <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
     </div>
     <div class="inline-drawer-content">
-      <div class="stdiff-global-toggle">
-        <label class="checkbox_label"><input type="checkbox" id="stdiff-enabled"> 启用世界书对比</label>
-      </div>
-
       <div id="stdiff-noass" class="stdiff-section" data-stdiff-section="root">
         <div class="stdiff-section-header">
           <div class="stdiff-noass-header-main">
@@ -298,30 +294,6 @@
 
     </div>
 
-      <!-- 以下为占位，将在后续启用 -->
-      <div class="st-diff-toolbar" style="display:none">
-        <label>视图：
-          <select data-stdiff-view-mode>
-            <option value="side-by-side">并排</option>
-            <option value="unified">合并</option>
-          </select>
-        </label>
-        <label><input type="checkbox" data-stdiff-ignore-ws checked style="display:none"> 忽略空白</label>
-        <label><input type="checkbox" data-stdiff-ignore-case style="display:none"> 忽略大小写</label>
-        <button class="menu_button fa-solid fa-code-compare" data-stdiff-compare style="display:none">Compare</button>
-      </div>
-
-      <div class="st-diff-body" style="display:none">
-        <div class="st-diff-left">
-          <div class="st-diff-nav">Diff Navigator (占位)</div>
-        </div>
-        <div class="st-diff-center">
-          <div class="st-diff-view">Diff View (占位)</div>
-        </div>
-        <div class="st-diff-right">
-          <div class="st-diff-details">Field Details (占位)</div>
-        </div>
-      </div>
     </div>
   </div>
 </div>

@@ -512,7 +512,7 @@ class NoassSettingsBinder {
         this.refreshTemplateOptions();
         this.saveDebounced();
       } catch (err) {
-        console.warn('[ST-Diff][noass] 导入配置失败', err);
+        console.warn('[ST-Archichat][noass] 导入配置失败', err);
         window.alert('导入失败，请检查文件内容');
       } finally {
         this.dom.$tplImportFile.val('');

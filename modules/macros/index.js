@@ -36,7 +36,7 @@ export async function mount(ctx) {
       unregisterMacros(ctx);
     }
   } catch (error) {
-    console.warn('[ST-Diff][macros] 注册/注销宏失败', error);
+    console.warn('[ST-Archichat][macros] 注册/注销宏失败', error);
   }
 
   // 提示词后处理器（仅影响提示词，不影响聊天显示）
@@ -49,7 +49,7 @@ export async function mount(ctx) {
       getState: () => currentState,
     });
   } catch (error) {
-    console.warn('[ST-Diff][macros] 提示词后处理器挂载失败', error);
+    console.warn('[ST-Archichat][macros] 提示词后处理器挂载失败', error);
   }
 
   // 挂载 UI（启用切换逻辑由 Binder 负责）
@@ -64,7 +64,7 @@ export async function mount(ctx) {
     };
     mountMacrosUI(ctx, currentState, runtimeHooks);
   } catch (error) {
-    console.warn('[ST-Diff][macros] UI 挂载失败', error);
+    console.warn('[ST-Archichat][macros] UI 挂载失败', error);
   }
 }
 
@@ -78,7 +78,7 @@ export async function unmount(ctx) {
   try {
     unregisterMacros(ctx ?? currentCtx);
   } catch (error) {
-    console.warn('[ST-Diff][macros] 注销宏失败', error);
+    console.warn('[ST-Archichat][macros] 注销宏失败', error);
   }
 
   try {
@@ -86,7 +86,7 @@ export async function unmount(ctx) {
       cleanupPromptPost();
     }
   } catch (error) {
-    console.warn('[ST-Diff][macros] 提示词后处理器卸载失败', error);
+    console.warn('[ST-Archichat][macros] 提示词后处理器卸载失败', error);
   } finally {
     cleanupPromptPost = null;
   }
@@ -94,7 +94,7 @@ export async function unmount(ctx) {
   try {
     unmountMacrosUI();
   } catch (error) {
-    console.warn('[ST-Diff][macros] UI 卸载失败', error);
+    console.warn('[ST-Archichat][macros] UI 卸载失败', error);
   }
 
   currentState = null;

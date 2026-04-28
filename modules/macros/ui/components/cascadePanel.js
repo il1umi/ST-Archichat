@@ -36,7 +36,7 @@ const SORT_OPTIONS = [
     { value: 'asc', label: '升序排序' },
     { value: 'desc', label: '降序排序' },
 ];
-const TAG = '[ST-Diff][macros:UI:cascade]';
+const TAG = '[ST-Archichat][macros:UI:cascade]';
 
 /**
  * 渲染 Cascade宏面板
@@ -517,7 +517,7 @@ export function renderCascadePanel(ctx, state, context) {
             const safeId = (state?.cascade?.activeGroupId || 'cascade').replace(/[\\/:*?"<>|]/g, '_');
             const a = document.createElement('a');
             a.href = url;
-            a.download = `ST-Diff-cascade-${safeId}.json`;
+            a.download = `ST-Archichat-cascade-${safeId}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

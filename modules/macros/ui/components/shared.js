@@ -1,8 +1,28 @@
 import { MACRO_KEYS, EXTENSION_KEY } from '../../constants.js';
 import { importModule, saveMacrosState } from '../../state/manager.js';
 
-const TAG = '[ST-Diff][macros:UI]';
-const MACROS_DOC_URL = '/scripts/extensions/third-party/ST-Diff/macros.md';
+const TAG = '[ST-Archichat][macros:UI]';
+
+function resolveThisExtensionRootName(fallback = 'ST-Archichat') {
+    try {
+        const url = new URL(import.meta.url);
+        const marker = '/scripts/extensions/';
+        const pathname = String(url.pathname || '');
+        const index = pathname.lastIndexOf(marker);
+        if (index < 0) return `third-party/${fallback}`;
+
+        const relative = pathname.slice(index + marker.length).replace(/^\/+/, '');
+        const parts = relative.split('/').filter(Boolean);
+        if (parts[0] === 'third-party' && parts[1]) return `third-party/${parts[1]}`;
+        if (parts[0]) return parts[0];
+        return `third-party/${fallback}`;
+    } catch {
+        return `third-party/${fallback}`;
+    }
+}
+
+const EXT_ROOT = resolveThisExtensionRootName();
+const MACROS_DOC_URL = `/scripts/extensions/${EXT_ROOT}/presentation/docs/macros.md`;
 
 const TAB_LABELS = {
     [MACRO_KEYS.ROULETTE]: 'Roulette宏',
@@ -717,7 +737,7 @@ export function notify(ctx, message, type = 'info') {
         const prefersTriplet = uiNotify.length >= 3;
         try {
             if (prefersTriplet) {
-                uiNotify(normalizedType, message, 'ST-Diff');
+                uiNotify(normalizedType, message, 'ST-Archichat');
             } else {
                 uiNotify(message, normalizedType);
             }
@@ -730,7 +750,7 @@ export function notify(ctx, message, type = 'info') {
             return;
         } catch {}
         try {
-            uiNotify(normalizedType, message, 'ST-Diff');
+            uiNotify(normalizedType, message, 'ST-Archichat');
             return;
         } catch {}
     }
@@ -740,7 +760,7 @@ export function notify(ctx, message, type = 'info') {
         const prefersTriplet = notifier.length >= 3;
         try {
             if (prefersTriplet) {
-                notifier(normalizedType, message, 'ST-Diff');
+                notifier(normalizedType, message, 'ST-Archichat');
             } else {
                 notifier(message, normalizedType);
             }
@@ -752,7 +772,7 @@ export function notify(ctx, message, type = 'info') {
             return;
         } catch {}
         try {
-            notifier(normalizedType, message, 'ST-Diff');
+            notifier(normalizedType, message, 'ST-Archichat');
             return;
         } catch {}
     }
@@ -770,7 +790,7 @@ export function notify(ctx, message, type = 'info') {
 }
 
 /**
- * 打开宏文档弹窗：加载 ST-Diff/macros.md，使用酒馆 markdown渲染（showdown + DOMPurify）转换为html，
+ * 打开宏文档弹窗：加载 ST-Archichat 宏文档，使用酒馆 markdown渲染（showdown + DOMPurify）转换为html，
  * 然后通过callGenericPopup展示。若缺少 md 渲染，则回退为纯文本显示
  *
  * 运行时直接从扩展目录读取 md，并使用酒馆全局的 showdown 管线进行渲染
@@ -783,7 +803,7 @@ export async function openMacrosDocs(ctx, tab) {
     try {
         // 优先方案：若模板目录存在 Markdown 且宿主具备 showdown，则优先用markdown渲染
         try {
-            const tmplMdResHead = await fetch('/scripts/extensions/third-party/ST-Diff/presentation/templates/macros-docs.md', { cache: 'no-cache' });
+            const tmplMdResHead = await fetch(`/scripts/extensions/${EXT_ROOT}/presentation/templates/macros-docs.md`, { cache: 'no-cache' });
             if (tmplMdResHead?.ok) {
                 const tmplMd = await tmplMdResHead.text();
                 const htmlFromMd = renderMarkdownToHtmlSafe(tmplMd);
@@ -810,8 +830,8 @@ export async function openMacrosDocs(ctx, tab) {
         }
 
         // 次方案：加载预编译的html模板，避免运行时依赖 showdown/DOMPurify，获得更快的弹窗展示
-        // 模板路径与主面板一致：third-party/ST-Diff/presentation/templates/macros-docs.html
-        const base = 'third-party/ST-Diff/presentation/templates';
+        // 模板路径与主面板一致：<ext>/presentation/templates/macros-docs.html
+        const base = `${EXT_ROOT}/presentation/templates`;
         if (ctx?.renderExtensionTemplateAsync) {
             try {
                 const tplHtml = await ctx.renderExtensionTemplateAsync(base, 'macros-docs');
@@ -840,7 +860,7 @@ export async function openMacrosDocs(ctx, tab) {
 
         // 尝试从模板目录加载 md（macros-docs.md），若存在则用酒馆 md 渲染
         try {
-            const tmplMdRes = await fetch('/scripts/extensions/third-party/ST-Diff/presentation/templates/macros-docs.md', { cache: 'no-cache' });
+            const tmplMdRes = await fetch(`/scripts/extensions/${EXT_ROOT}/presentation/templates/macros-docs.md`, { cache: 'no-cache' });
             if (tmplMdRes?.ok) {
                 const tmplMd = await tmplMdRes.text();
                 const htmlFromMd = renderMarkdownToHtmlSafe(tmplMd);
@@ -1077,7 +1097,7 @@ function exportAllMacrosFile(ctx, state) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ST-Diff-macros.json`;
+    a.download = `ST-Archichat-macros.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

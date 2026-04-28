@@ -34,7 +34,7 @@ export function transferFirstTaggedBlock(content, startTag, endTag, targetTag, o
 
   const endIndex = content.indexOf(normalizedEnd, startIndex + normalizedStart.length);
   if (endIndex === -1) {
-    console.warn('[ST-Diff][noass][transfer] 未找到 endTag，跳过本次搬运', {
+    console.warn('[ST-Archichat][noass][transfer] 未找到 endTag，跳过本次搬运', {
       label: options?.label || null,
       startTag: normalizedStart,
       endTag: normalizedEnd,
@@ -46,7 +46,7 @@ export function transferFirstTaggedBlock(content, startTag, endTag, targetTag, o
   const segmentEnd = endIndex + normalizedEnd.length;
   const targetIndexInOriginal = content.indexOf(normalizedTarget);
   if (targetIndexInOriginal === -1) {
-    console.warn('[ST-Diff][noass][transfer] 未找到 targetTag，跳过本次搬运', {
+    console.warn('[ST-Archichat][noass][transfer] 未找到 targetTag，跳过本次搬运', {
       label: options?.label || null,
       startTag: normalizedStart,
       endTag: normalizedEnd,
@@ -56,7 +56,7 @@ export function transferFirstTaggedBlock(content, startTag, endTag, targetTag, o
   }
 
   if (targetIndexInOriginal >= startIndex && targetIndexInOriginal < segmentEnd) {
-    console.warn('[ST-Diff][noass][transfer] targetTag 位于 start..end 片段内部，跳过本次搬运', {
+    console.warn('[ST-Archichat][noass][transfer] targetTag 位于 start..end 片段内部，跳过本次搬运', {
       label: options?.label || null,
       startTag: normalizedStart,
       endTag: normalizedEnd,
@@ -70,7 +70,7 @@ export function transferFirstTaggedBlock(content, startTag, endTag, targetTag, o
 
   const targetIndex = remaining.indexOf(normalizedTarget);
   if (targetIndex === -1) {
-    console.warn('[ST-Diff][noass][transfer] targetTag 在移除片段后消失，跳过本次搬运', {
+    console.warn('[ST-Archichat][noass][transfer] targetTag 在移除片段后消失，跳过本次搬运', {
       label: options?.label || null,
       startTag: normalizedStart,
       endTag: normalizedEnd,

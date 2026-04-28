@@ -1,4 +1,4 @@
-const TAG = '[ST-Diff][macros][prompt-post]';
+const TAG = '[ST-Archichat][macros][prompt-post]';
 
 function escapeRegExp(source) {
   return String(source).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

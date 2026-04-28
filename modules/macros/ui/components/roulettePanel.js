@@ -30,7 +30,7 @@ import { generateId } from '../../runtime/utils.js';
 import { execute as executeRoulette } from '../../runtime/roulette.js';
 import { createEvaluator } from '../../runtime/evaluator.js';
 
-const TAG = '[ST-Diff][macros:UI:roulette]';
+const TAG = '[ST-Archichat][macros:UI:roulette]';
 
 /**
  * 渲染Roulette宏 面板。
@@ -488,7 +488,7 @@ export function renderRoulettePanel(ctx, state, context) {
             const safeId = (state?.roulette?.activeGroupId || 'roulette').replace(/[\\/:*?"<>|]/g, '_');
             const a = document.createElement('a');
             a.href = url;
-            a.download = `ST-Diff-roulette-${safeId}.json`;
+            a.download = `ST-Archichat-roulette-${safeId}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
