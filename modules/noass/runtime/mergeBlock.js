@@ -5,7 +5,7 @@ import { process } from './clewd/processor.js';
 import { applyClewdTagTransferRules } from './clewd/tagTransfer.js';
 import { captureAndStoreData, replaceTagsWithStoredData } from './capture/capture.js';
 import { injectWorldbookSentinels, attachDryRunHelpers } from './wibridge/sentinel.js';
-import { dispatchWorldbookSegments, normalizeWorldbookContent } from './wibridge/dispatch.js';
+import { dispatchWorldbookSegments } from './wibridge/dispatch.js';
 import { buildWorldbookRuntimeGroups } from './wibridge/normalize.js';
 import { exportWorldbookSnapshot } from './wibridge/cache.js';
 import {
@@ -15,7 +15,6 @@ import {
   cloneMessageArray,
   summarizeTextForDiagnostics,
   getWorldbookLogAdapter,
-  DRY_RUN_STATUS,
 } from './wibridge/state.js';
 import {
   contentHasNoTrans,
@@ -94,33 +93,6 @@ function buildRuntimeConfig(template) {
  
   attachDryRunHelpers(config);
   return config;
-}
-
-function insertBeforeFirstOccurrence(haystack, needle, insertText) {
-  if (!haystack || !needle || typeof haystack !== 'string') return haystack;
-  const index = haystack.indexOf(needle);
-  if (index === -1) return haystack;
-  return `${haystack.slice(0, index)}${insertText}${haystack.slice(index)}`;
-}
-
-function insertAfterLastOccurrence(haystack, needle, insertText) {
-  if (!haystack || !needle || typeof haystack !== 'string') return haystack;
-  const index = haystack.lastIndexOf(needle);
-  if (index === -1) return haystack;
-  const offset = index + needle.length;
-  return `${haystack.slice(0, offset)}${insertText}${haystack.slice(offset)}`;
-}
-
-/**
- * 将来自宿主的非标准角色（如 'model'）规范化为合并兼容的角色
- * @param {string} role
- * @returns {'user'|'assistant'|'system'}
- */
-function normalizeRole(role) {
-  const r = String(role || '').toLowerCase();
-  if (r === 'user' || r === 'assistant' || r === 'system') return /** @type any */(r);
-  // 非标准角色（例如 model）一律按 assistant 处理，避免被 clewd 前缀误归为 user
-  return 'assistant';
 }
 
 function addPreservedMessage(config, template, message, targetArray) {
