@@ -1,10 +1,10 @@
-import { WORLD_BOOK_SENTINEL_PREFIX } from './clewd/constants.js';
 import { defaultTemplate } from '../state/defaults.js';
 import { ensureTemplateDefaults, cloneTemplate } from '../state/state.js';
 import { process } from './clewd/processor.js';
 import { applyClewdTagTransferRules } from './clewd/tagTransfer.js';
 import { captureAndStoreData, replaceTagsWithStoredData } from './capture/capture.js';
 import { buildRuntimeConfig } from './runtimeConfig.js';
+import { createCustomAnchorProtection } from './worldbookAnchorProtection.js';
 import { injectWorldbookSentinels } from './wibridge/sentinel.js';
 import { dispatchWorldbookSegments } from './wibridge/dispatch.js';
 import {
@@ -133,41 +133,7 @@ export function processAndAddMergeBlock(template, config, blockToMerge, targetAr
 
   injectWorldbookSentinels(config, blockToMerge);
 
-  const runtimeGroups = Array.isArray(config?.worldbook?.groups) ? config.worldbook.groups : [];
-  const customAnchors = [];
-  for (const group of runtimeGroups) {
-    if (group?.target?.anchor === 'custom') {
-      const key = (group.target.customKey || '').trim();
-      if (key && !customAnchors.includes(key)) {
-        customAnchors.push(key);
-      }
-    }
-  }
-
-  const placeholderMap = new Map();
-  let blockForProcess = blockToMerge;
-
-  if (customAnchors.length) {
-    blockForProcess = blockToMerge.map((message) => {
-      if (!message || typeof message !== 'object') return message;
-      const cloned = { ...message };
-      if (typeof cloned.content === 'string' && cloned.content) {
-        let updated = cloned.content;
-        customAnchors.forEach((key, index) => {
-          let placeholder = placeholderMap.get(key);
-          if (!placeholder) {
-            placeholder = `${WORLD_BOOK_SENTINEL_PREFIX}ANCHOR${index}__`;
-            placeholderMap.set(key, placeholder);
-          }
-          if (updated.includes(key)) {
-            updated = updated.split(key).join(placeholder);
-          }
-        });
-        cloned.content = updated;
-      }
-      return cloned;
-    });
-  }
+  const anchorProtection = createCustomAnchorProtection(config, blockToMerge);
 
   const logAdapter = getWorldbookLogAdapter();
   const shouldLogRegex =
@@ -193,14 +159,10 @@ export function processAndAddMergeBlock(template, config, blockToMerge, targetAr
         }
       : undefined;
 
-  const mergedAssistantMessage = process(config, blockForProcess, processOptions);
+  const mergedAssistantMessage = process(config, anchorProtection.blockForProcess, processOptions);
 
-  if (placeholderMap.size && mergedAssistantMessage?.content) {
-    placeholderMap.forEach((placeholder, key) => {
-      if (mergedAssistantMessage.content.includes(placeholder)) {
-        mergedAssistantMessage.content = mergedAssistantMessage.content.split(placeholder).join(key);
-      }
-    });
+  if (mergedAssistantMessage?.content) {
+    mergedAssistantMessage.content = anchorProtection.restoreContent(mergedAssistantMessage.content);
   }
 
   const worldbookDispatch = dispatchWorldbookSegments(config, mergedAssistantMessage);
