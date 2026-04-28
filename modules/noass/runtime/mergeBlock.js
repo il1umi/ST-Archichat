@@ -4,8 +4,8 @@ import { process } from './clewd/processor.js';
 import { applyClewdTagTransferRules } from './clewd/tagTransfer.js';
 import { createClewdProcessOptions } from './clewdProcessOptions.js';
 import { captureAndStoreData, replaceTagsWithStoredData } from './capture/capture.js';
+import { processMessageList } from './messageListProcessor.js';
 import { buildRuntimeConfig } from './runtimeConfig.js';
-import { addPreservedMessage } from './preservedMessageProcessor.js';
 export { processPreservedSystemMessage } from './preservedMessageProcessor.js';
 import { createCustomAnchorProtection } from './worldbookAnchorProtection.js';
 import { injectWorldbookSentinels } from './wibridge/sentinel.js';
@@ -18,13 +18,7 @@ import {
   getWorldbookLogAdapter,
 } from './wibridge/state.js';
 import {
-  contentHasNoTrans,
-  cloneMessage,
-  stripNoTransFromMessage,
-  createMergeMessage,
-  isMultimodalMessage,
   messagesHaveToolCalls,
-  isEmptyContent,
 } from './messageBoundary.js';
 
 let refreshStoredDataView = null;
@@ -57,42 +51,6 @@ function updateLastCompletionSnapshot(state, template, messages, completion, ski
     source: completion?.chat_completion_source ?? null,
     skippedReason,
   };
-}
-
-function processMessageList(template, config, messages) {
-  const finalMessages = [];
-  let currentMergeBlock = [];
-  let storedChanged = false;
-
-  const flushMergeBlock = () => {
-    if (!currentMergeBlock.length) return;
-    storedChanged =
-      processAndAddMergeBlock(template, config, currentMergeBlock, finalMessages) ||
-      storedChanged;
-    currentMergeBlock = [];
-  };
-
-  for (const message of messages) {
-    if (contentHasNoTrans(message?.content)) {
-      flushMergeBlock();
-      addPreservedMessage(config, template, stripNoTransFromMessage(message), finalMessages);
-      continue;
-    }
-
-    if (isMultimodalMessage(message)) {
-      flushMergeBlock();
-      addPreservedMessage(config, template, cloneMessage(message), finalMessages);
-      continue;
-    }
-
-    const mergeMessage = createMergeMessage(message);
-    if (mergeMessage && !isEmptyContent(mergeMessage.content)) {
-      currentMergeBlock.push(mergeMessage);
-    }
-  }
-
-  flushMergeBlock();
-  return { finalMessages, storedChanged };
 }
 
 /**
@@ -277,6 +235,7 @@ export function handleCompletion(ctx, state, completion) {
     sanitizedTemplate,
     config,
     originalMessages,
+    processAndAddMergeBlock,
   );
 
   for (let i = 0; i < finalMessages.length; i++) {
@@ -362,7 +321,12 @@ export async function runWorldbookDryRun(ctx) {
     }
 
     createDryRunContext();
-    ({ finalMessages, storedChanged } = processMessageList(templateClone, config, messagesClone));
+    ({ finalMessages, storedChanged } = processMessageList(
+      templateClone,
+      config,
+      messagesClone,
+      processAndAddMergeBlock,
+    ));
     dryRunResult = finalizeDryRunContext();
   } catch (error) {
     runError = error;
