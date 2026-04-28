@@ -6,6 +6,7 @@ import { cleanupClewdControlTags } from './controlTags.js';
 import { parseMergeDisableFlags } from './mergeDisable.js';
 import { buildAssistantOutput } from './outputBuilder.js';
 import { buildPrefixedPrompt } from './promptBuilder.js';
+import { mergeAdjacentRolePrefixes } from './roleMerge.js';
 import { rewriteSystemPrefixes } from './systemRewrite.js';
 
 /**
@@ -29,24 +30,6 @@ export function process(prefixs, messages, options = {}) {
   prefixs = prefixs || defaultTemplate;
 
   const HyperProcess = function (system, messages, claudeMode) {
-    const hyperMerge = function (content, mergeDisable) {
-      let splitContent = content.split(
-        new RegExp(`\\n\\n(${prefixs.assistant}|${prefixs.user}|${prefixs.system}):`, 'g'),
-      );
-      content =
-        splitContent[0] +
-        splitContent.slice(1).reduce(function (acc, current, index, array) {
-          const merge =
-            index > 1 &&
-            current === array[index - 2] &&
-            ((current === prefixs.user && !mergeDisable.user) ||
-              (current === prefixs.assistant && !mergeDisable.assistant) ||
-              (current === prefixs.system && !mergeDisable.system));
-          return acc + (index % 2 !== 0 ? current.trim() : `\n\n${merge ? '' : `${current}: `}`);
-        }, '');
-      return content;
-    };
-
     const hyperRegex = function (content, order) {
       let regexLog = '';
       const regexPattern = `<regex(?: +order *= *${order})${order === 2 ? '?' : ''}> *"(/?)(.*)\\1(.*?)" *: *"(.*?)" *</regex>`;
@@ -79,7 +62,7 @@ export function process(prefixs, messages, options = {}) {
       const mergeDisable = parseMergeDisableFlags(content);
 
       content = rewriteSystemPrefixes(content, prefixs, mergeDisable);
-      content = hyperMerge(content, mergeDisable);
+      content = mergeAdjacentRolePrefixes(content, prefixs, mergeDisable);
 
       const splitPattern = new RegExp(`\\n\\n(?=${prefixs.assistant}:|${prefixs.user}:)`, 'g');
       let splitContent = content.split(splitPattern);
@@ -99,7 +82,7 @@ export function process(prefixs, messages, options = {}) {
       const regex2 = hyperRegex(content, 2);
       content = regex2[0];
       regexLogs += regex2[1];
-      content = hyperMerge(content, mergeDisable);
+      content = mergeAdjacentRolePrefixes(content, prefixs, mergeDisable);
 
       const regex3 = hyperRegex(content, 3);
       content = regex3[0];
