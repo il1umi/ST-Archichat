@@ -3,7 +3,8 @@ import { ensureTemplateDefaults, cloneTemplate } from '../state/state.js';
 import { process } from './clewd/processor.js';
 import { applyClewdTagTransferRules } from './clewd/tagTransfer.js';
 import { createClewdProcessOptions } from './clewdProcessOptions.js';
-import { captureAndStoreData, replaceTagsWithStoredData } from './capture/capture.js';
+import { replaceTagsWithStoredData } from './capture/capture.js';
+import { captureMergeBlockData } from './mergeBlockCapture.js';
 import { processMessageList } from './messageListProcessor.js';
 import { buildRuntimeConfig } from './runtimeConfig.js';
 export { processPreservedSystemMessage } from './preservedMessageProcessor.js';
@@ -67,19 +68,7 @@ export function processAndAddMergeBlock(template, config, blockToMerge, targetAr
     return false;
   }
 
-  let storedChanged = false;
-
-  if (config.capture_enabled && config.capture_rules?.length) {
-    let combinedContent = '';
-    for (const message of blockToMerge) {
-      if (message?.content && typeof message.content === 'string') {
-        combinedContent += (combinedContent ? '\n\n' : '') + message.content;
-      }
-    }
-    if (combinedContent) {
-      storedChanged = captureAndStoreData(template, combinedContent) || storedChanged;
-    }
-  }
+  let storedChanged = captureMergeBlockData(template, config, blockToMerge);
 
   injectWorldbookSentinels(config, blockToMerge);
 
