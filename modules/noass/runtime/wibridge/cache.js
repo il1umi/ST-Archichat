@@ -24,7 +24,7 @@ export async function ensureRegexHelpers(ctx) {
   if (!regexHelpersPromise) {
     regexHelpersPromise = (async () => {
       try {
-        const module = await import('../../../../regex/engine.js');
+        const module = await import('/scripts/extensions/regex/engine.js');
         if (module?.getRegexedString && module?.regex_placement) {
           return {
             getRegexedString: module.getRegexedString,
