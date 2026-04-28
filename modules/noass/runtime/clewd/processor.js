@@ -3,8 +3,7 @@
  */
 import { defaultTemplate } from '../../state/defaults.js';
 import { buildAssistantOutput } from './outputBuilder.js';
-import { buildPrefixedPrompt } from './promptBuilder.js';
-import { runPromptPipeline } from './promptPipeline.js';
+import { composeClewdPrompt } from './promptComposer.js';
 
 /**
  * clewd 合并流程核心实现。
@@ -26,33 +25,17 @@ export function process(prefixs, messages, options = {}) {
   const { logHandler } = options;
   prefixs = prefixs || defaultTemplate;
 
-  const HyperProcess = function (system, messages, claudeMode) {
-    let prompt = system || '';
-    let regexLogs = '';
-
-    if (!messages || messages.length === 0) {
-      return { prompt: '', log: '' };
-    }
-
-    prompt = buildPrefixedPrompt(prompt, messages, prefixs, (message) => {
+  const result = composeClewdPrompt(prefixs, messages, {
+    initialPrompt: '',
+    claudeMode: true,
+    logHandler,
+    onInvalidMessage: (message) => {
       console.warn('[ST-Archichat][noass] 跳过无效消息对象:', message);
-    });
-
-    const pipelineResult = runPromptPipeline(prompt, prefixs, {
-      logHandler,
-      onRegexError: (error) => {
-        console.warn('[ST-Archichat][noass] Regex processing error:', error);
-      },
-    });
-    prompt = pipelineResult.prompt;
-    regexLogs = pipelineResult.regexLog;
-    if (!claudeMode && prompt) {
-      prompt += `\n\n${prefixs.assistant}:`;
-    }
-    return { prompt: prompt, log: `\n####### Regex:\n${regexLogs}` };
-  };
-
-  const result = HyperProcess('', messages, true);
+    },
+    onRegexError: (error) => {
+      console.warn('[ST-Archichat][noass] Regex processing error:', error);
+    },
+  });
   const prompt = result.prompt;
 
   return buildAssistantOutput(prompt, prefixs, (error) => {
