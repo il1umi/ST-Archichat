@@ -3,6 +3,7 @@
  */
 import { defaultTemplate } from '../../state/defaults.js';
 import { cleanupClewdControlTags } from './controlTags.js';
+import { parseMergeDisableFlags } from './mergeDisable.js';
 import { buildAssistantOutput } from './outputBuilder.js';
 import { buildPrefixedPrompt } from './promptBuilder.js';
 
@@ -74,12 +75,7 @@ export function process(prefixs, messages, options = {}) {
       content = regex1[0];
       regexLogs += regex1[1];
 
-      const mergeDisable = {
-        all: content.indexOf('<|Merge Disable|>') !== -1,
-        system: content.indexOf('<|Merge System Disable|>') !== -1,
-        user: content.indexOf('<|Merge Human Disable|>') !== -1,
-        assistant: content.indexOf('<|Merge Assistant Disable|>') !== -1,
-      };
+      const mergeDisable = parseMergeDisableFlags(content);
 
       const systemPattern1 = new RegExp(
         `(\\n\\n|^\\s*)(?<!\\n\\n(${prefixs.user}|${prefixs.assistant}):.*?)${prefixs.system}:\\s*`,
