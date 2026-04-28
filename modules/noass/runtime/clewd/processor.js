@@ -2,14 +2,9 @@
  * @file 基于 clewd 迁移实现的对话合并核心，负责解析 `<regex>` 指令与角色前缀。
  */
 import { defaultTemplate } from '../../state/defaults.js';
-import { relocateAtBlocks } from './atRelocation.js';
-import { cleanupClewdControlTags } from './controlTags.js';
-import { parseMergeDisableFlags } from './mergeDisable.js';
 import { buildAssistantOutput } from './outputBuilder.js';
 import { buildPrefixedPrompt } from './promptBuilder.js';
-import { applyRegexDirectives } from './regexDirectives.js';
-import { mergeAdjacentRolePrefixes } from './roleMerge.js';
-import { rewriteSystemPrefixes } from './systemRewrite.js';
+import { runPromptPipeline } from './promptPipeline.js';
 
 /**
  * clewd 合并流程核心实现。
@@ -32,39 +27,6 @@ export function process(prefixs, messages, options = {}) {
   prefixs = prefixs || defaultTemplate;
 
   const HyperProcess = function (system, messages, claudeMode) {
-    const hyperRegex = function (content, order) {
-      return applyRegexDirectives(content, order, {
-        logHandler,
-        onError: (error) => {
-          console.warn('[ST-Archichat][noass] Regex processing error:', error);
-        },
-      });
-    };
-
-    const HyperPmtProcess = function (content) {
-      const regex1 = hyperRegex(content, 1);
-      content = regex1[0];
-      regexLogs += regex1[1];
-
-      const mergeDisable = parseMergeDisableFlags(content);
-
-      content = rewriteSystemPrefixes(content, prefixs, mergeDisable);
-      content = mergeAdjacentRolePrefixes(content, prefixs, mergeDisable);
-
-      content = relocateAtBlocks(content, prefixs);
-
-      const regex2 = hyperRegex(content, 2);
-      content = regex2[0];
-      regexLogs += regex2[1];
-      content = mergeAdjacentRolePrefixes(content, prefixs, mergeDisable);
-
-      const regex3 = hyperRegex(content, 3);
-      content = regex3[0];
-      regexLogs += regex3[1];
-
-      return cleanupClewdControlTags(content);
-    };
-
     let prompt = system || '';
     let regexLogs = '';
 
@@ -76,7 +38,14 @@ export function process(prefixs, messages, options = {}) {
       console.warn('[ST-Archichat][noass] 跳过无效消息对象:', message);
     });
 
-    prompt = HyperPmtProcess(prompt);
+    const pipelineResult = runPromptPipeline(prompt, prefixs, {
+      logHandler,
+      onRegexError: (error) => {
+        console.warn('[ST-Archichat][noass] Regex processing error:', error);
+      },
+    });
+    prompt = pipelineResult.prompt;
+    regexLogs = pipelineResult.regexLog;
     if (!claudeMode && prompt) {
       prompt += `\n\n${prefixs.assistant}:`;
     }
