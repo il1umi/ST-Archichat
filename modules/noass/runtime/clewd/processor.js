@@ -2,6 +2,8 @@
  * @file 基于 clewd 迁移实现的对话合并核心，负责解析 `<regex>` 指令与角色前缀。
  */
 import { defaultTemplate } from '../../state/defaults.js';
+import { buildAssistantOutput } from './outputBuilder.js';
+import { buildPrefixedPrompt } from './promptBuilder.js';
 
 /**
  * clewd 合并流程核心实现。
@@ -144,21 +146,9 @@ export function process(prefixs, messages, options = {}) {
       return { prompt: '', log: '' };
     }
 
-    for (const message of messages) {
-      if (message && message.content) {
-        // 归一化角色：未知角色（如 'model'）归到 assistant，避免被错误按 user 前缀处理
-        let role = message.role || 'user';
-        if (!['user', 'assistant', 'system'].includes(role)) {
-          role = 'assistant';
-        }
-        const name = message.name;
-        const prefixLookup = prefixs[name] || prefixs[role] || role;
-        const prefix = `\n\n${prefixLookup}${name ? `: ${name}` : ''}: `;
-        prompt += prefix + (typeof message.content === 'string' ? message.content.trim() : String(message.content).trim());
-      } else {
-        console.warn('[ST-Archichat][noass] 跳过无效消息对象:', message);
-      }
-    }
+    prompt = buildPrefixedPrompt(prompt, messages, prefixs, (message) => {
+      console.warn('[ST-Archichat][noass] 跳过无效消息对象:', message);
+    });
 
     prompt = HyperPmtProcess(prompt);
     if (!claudeMode && prompt) {
@@ -167,29 +157,10 @@ export function process(prefixs, messages, options = {}) {
     return { prompt: prompt, log: `\n####### Regex:\n${regexLogs}` };
   };
 
-  let separator = '';
-  if (prefixs.separator) {
-    try {
-      separator = JSON.parse(`"${prefixs.separator}"`);
-    } catch (e) {
-      console.error('[ST-Archichat][noass] separator 解析失败', e);
-    }
-  }
-
-  const youPmtProcess = function (prompt, sep) {
-    if (typeof prompt !== 'string' || !prompt) return '';
-    const splitPattern = new RegExp(`\\n\\n(?=${prefixs.assistant}:|${prefixs.user}:)`, 'g');
-    return prompt.split(splitPattern).join(`\n${sep}\n`);
-  };
-
   const result = HyperProcess('', messages, true);
   const prompt = result.prompt;
 
-  const youPrompt = prompt.split(/\s*\[-youFileTag-\]\s*/);
-  const filePrompt = youPrompt.length > 0 ? youPrompt.pop().trim() : '';
-
-  return {
-    role: 'assistant',
-    content: youPmtProcess(filePrompt, separator),
-  };
+  return buildAssistantOutput(prompt, prefixs, (error) => {
+    console.error('[ST-Archichat][noass] separator 解析失败', error);
+  });
 }
