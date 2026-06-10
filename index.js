@@ -18,7 +18,7 @@ const DEFAULTS = {
   worldinfo: { lastSelectedA: null, lastSelectedB: null },
   history: [],
   version: 1,
-  modules: { worldbook: true, presets: false },
+  modules: { worldbook: true, presets: true },
   noass: { enabled: true },
 };
 
@@ -90,6 +90,12 @@ async function init() {
     console.warn('[ST-Archichat] macros 初始化失败', e);
   }
 
+  try {
+    await Modules.presets.mount(ctx);
+  } catch (e) {
+    console.warn('[ST-Archichat] presets 初始化失败', e);
+  }
+
   // 说明：世界书对比已拆分为独立扩展 ST-Diff，这里仅保留对话规则构筑相关模块。
 }
 
@@ -150,13 +156,28 @@ const Modules = {
   presets: {
     mounted: false,
     async mount(ctx) {
-      if (this.mounted) return; this.mounted = true;
+      if (this.mounted) return;
+      this.mounted = true;
       try {
         const mod = await import('./modules/presets/presets.module.js');
         await mod.mount(ctx);
-      } catch (e) { console.warn('[ST-Archichat] 预设模块加载失败', e); }
+      } catch (e) {
+        console.warn('[ST-Archichat] 预设模块加载失败', e);
+        this.mounted = false;
+      }
     },
-    unmount() { /* 预留 */ },
+    async unmount(ctx) {
+      if (!this.mounted) return;
+      this.mounted = false;
+      try {
+        const mod = await import('./modules/presets/presets.module.js');
+        if (typeof mod.unmount === 'function') {
+          await mod.unmount(ctx);
+        }
+      } catch (e) {
+        console.warn('[ST-Archichat] 预设模块卸载失败', e);
+      }
+    },
   }
 };
 
