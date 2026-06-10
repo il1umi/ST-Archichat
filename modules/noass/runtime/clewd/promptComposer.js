@@ -1,3 +1,4 @@
+import { formatRolePrefix, resolveRolePrefix } from './prefixUtils.js';
 import { buildPrefixedPrompt } from './promptBuilder.js';
 import { runPromptPipeline } from './promptPipeline.js';
 
@@ -23,7 +24,7 @@ export function composeClewdPrompt(prefixs, messages, options = {}) {
 
   prompt = pipelineResult.prompt;
   if (!claudeMode && prompt) {
-    prompt += `\n\n${prefixs.assistant}:`;
+    prompt += formatRolePrefix(resolveRolePrefix(prefixs, 'assistant'), { trailingSpace: false });
   }
 
   return {

@@ -1,3 +1,5 @@
+import { buildRoleStartLookaheadPattern } from './prefixUtils.js';
+
 function decodeSeparator(rawSeparator, onSeparatorError = null) {
   if (!rawSeparator) return '';
   try {
@@ -12,7 +14,8 @@ function decodeSeparator(rawSeparator, onSeparatorError = null) {
 
 function applyTurnSeparator(prompt, separator, prefixs) {
   if (typeof prompt !== 'string' || !prompt) return '';
-  const splitPattern = new RegExp(`\\n\\n(?=${prefixs.assistant}:|${prefixs.user}:)`, 'g');
+  const splitPattern = buildRoleStartLookaheadPattern(prefixs, ['assistant', 'user']);
+  if (!splitPattern) return prompt;
   return prompt.split(splitPattern).join(`\n${separator}\n`);
 }
 

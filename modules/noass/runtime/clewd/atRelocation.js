@@ -1,6 +1,8 @@
+import { buildRoleStartLookaheadPattern } from './prefixUtils.js';
+
 export function relocateAtBlocks(content, prefixs) {
-  const splitPattern = new RegExp(`\\n\\n(?=${prefixs.assistant}:|${prefixs.user}:)`, 'g');
-  let splitContent = content.split(splitPattern);
+  const splitPattern = buildRoleStartLookaheadPattern(prefixs, ['assistant', 'user']);
+  let splitContent = splitPattern ? content.split(splitPattern) : [content];
 
   let match;
   const atPattern = /<@(\d+)>(.*?)<\/@\1>/gs;

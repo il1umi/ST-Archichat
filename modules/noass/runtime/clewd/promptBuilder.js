@@ -1,3 +1,5 @@
+import { formatPromptSegmentPrefix, resolveMessagePrefix } from './prefixUtils.js';
+
 function normalizeMessageRole(role) {
   const normalizedRole = role || 'user';
   return ['user', 'assistant', 'system'].includes(normalizedRole) ? normalizedRole : 'assistant';
@@ -6,8 +8,8 @@ function normalizeMessageRole(role) {
 function createPromptSegment(message, prefixs) {
   const role = normalizeMessageRole(message.role);
   const name = message.name;
-  const prefixLookup = prefixs[name] || prefixs[role] || role;
-  const prefix = `\n\n${prefixLookup}${name ? `: ${name}` : ''}: `;
+  const prefixLookup = resolveMessagePrefix(prefixs, role, name);
+  const prefix = formatPromptSegmentPrefix(prefixLookup, name);
   const content = typeof message.content === 'string'
     ? message.content.trim()
     : String(message.content).trim();
