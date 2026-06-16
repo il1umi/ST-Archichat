@@ -19,18 +19,10 @@ export function resolveRolePrefix(prefixs, role) {
   return normalizePrefixText(role);
 }
 
-export function resolveMessagePrefix(prefixs, role, name) {
-  if (name && hasOwnPrefix(prefixs, name)) {
-    return normalizePrefixText(prefixs[name]);
-  }
-
-  return resolveRolePrefix(prefixs, role);
-}
-
-export function formatPromptSegmentPrefix(prefix, name = '') {
+export function formatPromptSegmentPrefix(prefix) {
   const label = normalizePrefixText(prefix);
   if (!label) return '\n\n';
-  return `\n\n${label}${name ? `: ${name}` : ''}: `;
+  return formatRolePrefix(label);
 }
 
 export function formatRolePrefix(prefix, { leadingNewlines = true, trailingSpace = true } = {}) {
