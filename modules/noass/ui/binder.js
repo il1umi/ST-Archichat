@@ -198,6 +198,8 @@ class NoassSettingsBinder {
       $separatorSystem: $root.find('#stdiff-noass-sep-system'),
       $prefill: $root.find('#stdiff-noass-prefill'),
 
+      $mergeEnabled: $root.find('#stdiff-noass-merge-enabled'),
+      $worldbookRelocation: $root.find('#stdiff-noass-worldbook-relocation-enabled'),
       $singleUser: $root.find('#stdiff-noass-single-user'),
       $cleanClewd: $root.find('#stdiff-noass-clean-clewd'),
       $injectPrefill: $root.find('#stdiff-noass-inject-prefill'),
@@ -242,6 +244,8 @@ class NoassSettingsBinder {
       $separator,
       $separatorSystem,
       $prefill,
+      $mergeEnabled,
+      $worldbookRelocation,
       $singleUser,
       $cleanClewd,
       $injectPrefill,
@@ -285,10 +289,22 @@ class NoassSettingsBinder {
     this.bindTextInput($separatorSystem, 'separator_system');
     this.bindTextInput($prefill, 'prefill_user');
 
+    this.bindCheckbox($worldbookRelocation, 'worldbook_enabled', true);
     this.bindCheckbox($singleUser, 'single_user', false);
     this.bindCheckbox($cleanClewd, 'clean_clewd', false);
     this.bindCheckbox($injectPrefill, 'inject_prefill', true);
     this.bindCheckbox($captureEnabled, 'capture_enabled', true);
+
+    // 对话合并子开关：关闭时世界书改走 custom-only 独立管线，需联动刷新锚点可用性
+    $mergeEnabled.off('change' + this.ns).on('change' + this.ns, () => {
+      if (this.isUpdating) return;
+      const template = this.getActiveTemplate();
+      template.merge_enabled = $mergeEnabled.prop('checked');
+      this.saveDebounced();
+      if (this.worldbookController) {
+        this.worldbookController.updateTemplate(template);
+      }
+    });
 
     $addRule.off('click' + this.ns).on('click' + this.ns, () => {
       const template = this.getActiveTemplate();
@@ -545,6 +561,8 @@ class NoassSettingsBinder {
       $separator,
       $separatorSystem,
       $prefill,
+      $mergeEnabled,
+      $worldbookRelocation,
       $singleUser,
       $cleanClewd,
       $injectPrefill,
@@ -564,6 +582,8 @@ class NoassSettingsBinder {
     $separatorSystem.val(template.separator_system);
     $prefill.val(template.prefill_user);
 
+    $mergeEnabled.prop('checked', template.merge_enabled !== false);
+    $worldbookRelocation.prop('checked', template.worldbook_enabled !== false);
     $singleUser.prop('checked', !!template.single_user);
     $cleanClewd.prop('checked', !!template.clean_clewd);
     $injectPrefill.prop('checked', template.inject_prefill !== false);

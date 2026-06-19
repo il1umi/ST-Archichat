@@ -5,6 +5,8 @@ import { processAndAddMergeBlock } from './mergeBlockProcessor.js';
 import { processMessageList } from './messageListProcessor.js';
 import { buildRuntimeConfig } from './runtimeConfig.js';
 import { messagesHaveToolCalls } from './messageBoundary.js';
+import { relocateWorldbookStandalone } from './worldbook/application/relocateWorldbookStandalone.js';
+import { resolveNoassMode, NOASS_MODE } from './noassMode.js';
 import {
   createDryRunContext,
   finalizeDryRunContext,
@@ -52,6 +54,7 @@ export async function runWorldbookDryRun(ctx) {
   };
 
   let dryRunResult = null;
+  let standaloneDiagnostics = null;
   let runError = null;
 
   try {
@@ -60,14 +63,29 @@ export async function runWorldbookDryRun(ctx) {
       return;
     }
 
-    createDryRunContext();
-    ({ finalMessages, storedChanged } = processMessageList(
-      templateClone,
-      config,
-      messagesClone,
-      processAndAddMergeBlock,
-    ));
-    dryRunResult = finalizeDryRunContext();
+    const mode = resolveNoassMode(config);
+
+    if (mode === NOASS_MODE.SKIP) {
+      logAdapter.append('Dry Run 跳过：对话合并与世界书搬运均已关闭。', null, { force: true });
+      return;
+    }
+
+    if (mode === NOASS_MODE.MERGE) {
+      createDryRunContext();
+      ({ finalMessages, storedChanged } = processMessageList(
+        templateClone,
+        config,
+        messagesClone,
+        processAndAddMergeBlock,
+      ));
+      dryRunResult = finalizeDryRunContext();
+    } else {
+      createDryRunContext();
+      const standaloneResult = relocateWorldbookStandalone(config, messagesClone);
+      finalMessages = standaloneResult.messages;
+      standaloneDiagnostics = standaloneResult.diagnostics;
+      dryRunResult = finalizeDryRunContext();
+    }
   } catch (error) {
     runError = error;
     if (typeof finalizeDryRunContext === 'function') {
@@ -116,7 +134,9 @@ export async function runWorldbookDryRun(ctx) {
     { force: true },
   );
 
-  if (!groupReports.length) {
+  if (standaloneDiagnostics) {
+    logAdapter.append('独立世界书搬运诊断', standaloneDiagnostics, { force: true });
+  } else if (!groupReports.length) {
     logAdapter.append('未命中任何启用的世界书条目', null, { force: true });
   } else {
     groupReports.forEach((report) => {
@@ -188,7 +208,8 @@ export async function runWorldbookDryRun(ctx) {
       role: message?.role,
       preview: summarizeText(message?.content || ''),
     }));
-    logAdapter.append('合并结果预览', { messages: preview }, { force: true });
+    const previewTitle = config.merge_enabled ? '合并结果预览' : '独立搬运结果预览';
+    logAdapter.append(previewTitle, { messages: preview }, { force: true });
   }
 
   try {

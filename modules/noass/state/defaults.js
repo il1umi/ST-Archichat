@@ -46,6 +46,9 @@ export const defaultTemplate = {
   separator: '',
   separator_system: '',
   prefill_user: 'Continue the conversation.',
+  // 子能力开关（与模块总闸 state.enabled 分离）：对话合并 / 世界书搬运，默认均开启以兼容历史行为
+  merge_enabled: true,
+  worldbook_enabled: true,
   capture_enabled: true,
   capture_rules: [],
   clewd_tag_transfer_rules: [],

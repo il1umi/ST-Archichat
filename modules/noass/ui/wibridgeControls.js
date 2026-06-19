@@ -458,6 +458,8 @@ class NoassWorldbookControls {
     this.updateDebugToggle(template.debug_worldbook === true);
 
     this.internalUpdate = false;
+
+    this.refreshAnchorAvailability(template);
   }
 
   renderGroupControls(group) {
@@ -618,6 +620,60 @@ class NoassWorldbookControls {
     const anchor = this.dom.$anchor.val();
     const isCustom = anchor === this.deps.WORLD_BOOK_ANCHORS.CUSTOM;
     this.dom.$customKey.prop('disabled', !isCustom);
+  }
+
+  /**
+   * 依据"对话合并"子开关调整目标锚点的可用性。
+   *
+   * 关闭合并（`template.merge_enabled === false`）时，世界书改走 custom-only 的独立搬运管线：
+   * 锁定锚点下拉为 custom、禁用其余选项，并把所有策略组的有效锚点强制为 custom。
+   * 默认锚点是 before，若不强制，独立模式会在运行时被过滤而"看似无反应"。
+   * 开启合并时恢复全部锚点可选。
+   *
+   * @param {object} [template] 当前模板；默认取激活模板
+   */
+  refreshAnchorAvailability(template = this.getTemplate()) {
+    const d = this.dom;
+    if (!d.$anchor || !d.$anchor.length) return;
+
+    const anchors = this.deps.WORLD_BOOK_ANCHORS;
+    const lockToCustom = template?.merge_enabled === false;
+    const nonCustomAnchors = [anchors.BEFORE, anchors.AFTER, anchors.HEADER, anchors.MEMORY];
+
+    nonCustomAnchors.forEach((value) => {
+      d.$anchor.find(`option[value="${value}"]`).prop('disabled', lockToCustom);
+    });
+
+    if (!lockToCustom) {
+      return;
+    }
+
+    const groups = this.ensureWorldbookGroups(template);
+    let changed = false;
+    for (const group of groups) {
+      group.target = group.target || {};
+      if (group.target.anchor !== anchors.CUSTOM) {
+        group.target.anchor = anchors.CUSTOM;
+        changed = true;
+      }
+    }
+
+    const group = groups[this.currentIndex];
+    if (!group) return;
+
+    this.internalUpdate = true;
+    d.$anchor.val(anchors.CUSTOM);
+    this.internalUpdate = false;
+
+    this.updateCustomInputState();
+    this.renderSummary(group);
+    if (d.$summary?.length) {
+      d.$summary.text(`${d.$summary.text()} ｜ 关闭合并时仅支持 custom`);
+    }
+
+    if (changed) {
+      this.saveState();
+    }
   }
 
   updateDebugToggle(enabled) {

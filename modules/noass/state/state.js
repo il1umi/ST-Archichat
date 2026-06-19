@@ -140,6 +140,8 @@ export function ensureTemplateDefaults(template) {
   }
 
   // 统一布尔字段为严格布尔，修复历史上可能存成字符串 "false"/"true" 导致 !!value 判定错误的问题
+  template.merge_enabled = normalizeBool(template.merge_enabled, true);
+  template.worldbook_enabled = normalizeBool(template.worldbook_enabled, true);
   template.capture_enabled = normalizeBool(template.capture_enabled, true);
   template.single_user = normalizeBool(template.single_user, false);
   template.inject_prefill = normalizeBool(template.inject_prefill, true);

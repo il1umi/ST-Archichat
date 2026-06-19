@@ -24,7 +24,7 @@
           <div class="stdiff-noass-header-main">
             <label class="checkbox_label">
               <input type="checkbox" id="stdiff-noass-enabled">
-              启用 noass（对话合并与 clewd 正则）
+              启用 noass 模块（对话规则处理）
             </label>
           </div>
           <button type="button" class="menu_button stdiff-noass-collapse" data-stdiff-collapse="root" aria-expanded="true" title="折叠/展开">
@@ -77,6 +77,8 @@
               </div>
 
               <div class="stdiff-noass-checks">
+                <label><input type="checkbox" id="stdiff-noass-merge-enabled"> 启用对话合并（clewd 压缩）</label>
+                <label><input type="checkbox" id="stdiff-noass-worldbook-relocation-enabled"> 启用世界书搬运</label>
                 <label><input type="checkbox" id="stdiff-noass-single-user"> 启用单 user</label>
                 <label><input type="checkbox" id="stdiff-noass-clean-clewd"> 清理空 clewd 正则</label>
                 <label><input type="checkbox" id="stdiff-noass-inject-prefill"> 注入 user 预填充消息</label>

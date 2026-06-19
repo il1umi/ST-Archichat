@@ -8,6 +8,8 @@ import { processAndAddMergeBlock } from './mergeBlockProcessor.js';
 import { processMessageList } from './messageListProcessor.js';
 import { buildRuntimeConfig } from './runtimeConfig.js';
 import { messagesHaveToolCalls } from './messageBoundary.js';
+import { relocateWorldbookStandalone } from './worldbook/application/relocateWorldbookStandalone.js';
+import { resolveNoassMode, NOASS_MODE } from './noassMode.js';
 
 function saveSettings(ctx) {
   if (typeof ctx?.saveSettingsDebounced === 'function') {
@@ -50,6 +52,22 @@ export function handleCompletion(ctx, state, completion) {
 
   const config = buildRuntimeConfig(sanitizedTemplate);
   updateLastCompletionSnapshot(state, sanitizedTemplate, originalMessages, completion);
+
+  const mode = resolveNoassMode(config);
+
+  // 两个子开关都关：不介入（快照已记账，仅用于 Dry-Run 等查看）
+  if (mode === NOASS_MODE.SKIP) {
+    return;
+  }
+
+  // 仅启用世界书搬运（关闭对话合并）：走 custom-only 独立管线，不做合并/捕获/标签替换
+  if (mode === NOASS_MODE.WORLDBOOK_ONLY) {
+    const { messages: relocatedMessages, changed } = relocateWorldbookStandalone(config, originalMessages);
+    if (changed) {
+      completion.messages = relocatedMessages;
+    }
+    return;
+  }
 
   const { finalMessages, storedChanged } = processMessageList(
     sanitizedTemplate,
