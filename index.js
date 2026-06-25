@@ -96,6 +96,13 @@ async function init() {
     console.warn('[ST-Archichat] presets 初始化失败', e);
   }
 
+  // DeepSeek prefix must mount after noass so it sees the final outgoing messages.
+  try {
+    await Modules.deepseekPrefix.mount(ctx);
+  } catch (e) {
+    console.warn('[ST-Archichat] deepseek-prefix 初始化失败', e);
+  }
+
   // 说明：世界书对比已拆分为独立扩展 ST-Diff，这里仅保留对话规则构筑相关模块。
 }
 
@@ -178,7 +185,33 @@ const Modules = {
         console.warn('[ST-Archichat] 预设模块卸载失败', e);
       }
     },
-  }
+  },
+  deepseekPrefix: {
+    mounted: false,
+    async mount(ctx) {
+      if (this.mounted) return;
+      this.mounted = true;
+      try {
+        const mod = await import('./modules/deepseek-prefix/index.js');
+        await mod.mount(ctx);
+      } catch (e) {
+        console.warn('[ST-Archichat] deepseek-prefix 模块加载失败', e);
+        this.mounted = false;
+      }
+    },
+    async unmount(ctx) {
+      if (!this.mounted) return;
+      this.mounted = false;
+      try {
+        const mod = await import('./modules/deepseek-prefix/index.js');
+        if (typeof mod.unmount === 'function') {
+          await mod.unmount(ctx);
+        }
+      } catch (e) {
+        console.warn('[ST-Archichat] deepseek-prefix 模块卸载失败', e);
+      }
+    },
+  },
 };
 
 function resolveRequestHeaders(ctx) {
