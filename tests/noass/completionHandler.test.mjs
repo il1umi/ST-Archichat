@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { defaultTemplate } from '../../modules/noass/state/defaults.js';
+import { defaultTemplate, NO_TRANS_TAG } from '../../modules/noass/state/defaults.js';
 import { handleCompletion } from '../../modules/noass/runtime/completionHandler.js';
 
 test('handleCompletion rewrites completion messages through noass processing', () => {
@@ -58,6 +58,33 @@ test('handleCompletion 仅启用世界书搬运时不压缩对话', () => {
   handleCompletion({}, state, completion);
 
   assert.deepEqual(completion.messages, [{ role: 'user', content: 'hello' }]);
+});
+
+test('handleCompletion single_user 下保留 no-trans 标记后的 assistant 尾部预填充', () => {
+  const template = {
+    ...defaultTemplate,
+    capture_enabled: false,
+    inject_prefill: false,
+    worldbook_groups: [],
+    stored_data: {},
+    single_user: true,
+  };
+  const state = { enabled: true, active: 'main', templates: { main: template } };
+  const completion = {
+    messages: [
+      { role: 'user', content: 'u1' },
+      { role: 'user', content: 'u2' },
+      { role: 'assistant', content: NO_TRANS_TAG },
+      { role: 'assistant', content: '条目内容X' },
+    ],
+  };
+
+  handleCompletion({}, state, completion);
+
+  assert.deepEqual(completion.messages, [
+    { role: 'user', content: 'Human: u1\n\nu2' },
+    { role: 'assistant', content: '条目内容X' },
+  ]);
 });
 
 test('handleCompletion 合并与世界书子开关都关时不压缩对话', () => {
